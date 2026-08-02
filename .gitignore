@@ -1,0 +1,25 @@
+.venv/
+.uv-cache/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Local, generated, or potentially private model-lab data
+models/
+checkpoints/
+adapters/
+outputs/
+cache/
+private/
+data/private/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx

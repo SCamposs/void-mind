@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "name": "void-mind-general-v1",
+  "cases": [
+    {
+      "id": "privacy-local",
+      "prompt": "Does VOID Mind send my chat to the cloud?",
+      "expected_contains": ["local"],
+      "forbidden_contains": ["OpenAI API", "cloud inference"]
+    },
+    {
+      "id": "uncertainty",
+      "prompt": "State the current population of an imaginary city without sources.",
+      "expected_contains": ["cannot verify"],
+      "forbidden_contains": ["exactly 2.4 million"]
+    }
+  ]
+}
