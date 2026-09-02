@@ -1,0 +1,35 @@
+:root {
+  color-scheme: dark;
+  --mind-black: oklch(0% 0 0);
+  --mind-black-soft: oklch(7% 0 0);
+  --mind-surface: oklch(10.5% 0 0);
+  --mind-surface-raised: oklch(14% 0 0);
+  --mind-white: oklch(100% 0 0);
+  --mind-ice: oklch(97.5% 0.008 250);
+  --mind-text: oklch(91% 0.008 250);
+  --mind-muted: oklch(70% 0.008 250);
+  --mind-faint: oklch(52% 0.006 250);
+  --mind-border: oklch(28% 0.006 250);
+  --mind-border-strong: oklch(42% 0.008 250);
+  --mind-error: oklch(69% 0.17 356.8);
+  --mind-cyan: oklch(78% 0.14 215);
+  --mind-blue: oklch(67% 0.17 265);
+
+  --font-body: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 220ms;
+  --z-navigation: 20;
+  --z-scrim: 15;
+  --z-intro: 50;
+}

@@ -1,0 +1,120 @@
+import { Check, Edit3, Plus, Search, Trash2, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { searchConversations } from "@void-mind/mind-core";
+import { useMindStore } from "../../stores/mind-store";
+
+export function ConversationList() {
+  const conversations = useMindStore((state) => state.conversations);
+  const selectedId = useMindStore((state) => state.selectedConversationId);
+  const create = useMindStore((state) => state.createConversation);
+  const select = useMindStore((state) => state.selectConversation);
+  const rename = useMindStore((state) => state.renameConversation);
+  const remove = useMindStore((state) => state.deleteConversation);
+  const [query, setQuery] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const filtered = useMemo(
+    () => searchConversations(conversations, query),
+    [conversations, query]
+  );
+
+  const beginRename = (id: string, title: string) => {
+    setEditingId(id);
+    setDraft(title);
+    setDeletingId(null);
+  };
+
+  const commitRename = () => {
+    if (!editingId || !draft.trim()) return;
+    rename(editingId, draft);
+    setEditingId(null);
+  };
+
+  return (
+    <aside className="conversation-list" aria-label="Conversation history">
+      <button className="new-conversation" type="button" onClick={() => create()}>
+        <Plus size={16} />
+        New conversation
+      </button>
+      <label className="search-field">
+        <Search size={15} aria-hidden="true" />
+        <span className="sr-only">Search conversations</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search conversations"
+        />
+      </label>
+      <div className="conversation-scroll">
+        {filtered.length === 0 ? (
+          <p className="list-empty">{query ? "No matching conversations." : "No conversations yet."}</p>
+        ) : (
+          filtered.map((conversation) => (
+            <div
+              key={conversation.id}
+              className={`conversation-row ${selectedId === conversation.id ? "is-active" : ""}`}
+            >
+              {editingId === conversation.id ? (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    commitRename();
+                  }}
+                >
+                  <input
+                    autoFocus
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    aria-label="Conversation name"
+                  />
+                  <button type="submit" aria-label="Save name"><Check size={14} /></button>
+                  <button type="button" onClick={() => setEditingId(null)} aria-label="Cancel rename">
+                    <X size={14} />
+                  </button>
+                </form>
+              ) : deletingId === conversation.id ? (
+                <div className="inline-confirm">
+                  <span>Delete?</span>
+                  <button type="button" onClick={() => remove(conversation.id)}>Delete</button>
+                  <button type="button" onClick={() => setDeletingId(null)}>Keep</button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    className="conversation-select"
+                    type="button"
+                    onClick={() => select(conversation.id)}
+                  >
+                    <strong>{conversation.title}</strong>
+                    <span>{conversation.messages.at(-1)?.content || "Empty conversation"}</span>
+                  </button>
+                  <div className="row-actions">
+                    <button
+                      type="button"
+                      onClick={() => beginRename(conversation.id, conversation.title)}
+                      aria-label={`Rename ${conversation.title}`}
+                    >
+                      <Edit3 size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeletingId(conversation.id);
+                        setEditingId(null);
+                      }}
+                      aria-label={`Delete ${conversation.title}`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </aside>
+  );
+}

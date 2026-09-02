@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-02T15:45:00.000Z",
+  "title": "Design System: VOID Mind",
+  "extensions": {
+    "colorMeta": {
+      "environment": {
+        "role": "neutral",
+        "displayName": "Absolute Environment",
+        "canonical": "oklch(0% 0 0)",
+        "tonalRamp": ["oklch(0% 0 0)", "oklch(7% 0 0)", "oklch(14% 0 0)", "oklch(28% 0 0)", "oklch(42% 0 0)", "oklch(58% 0 0)", "oklch(76% 0 0)", "oklch(95% 0 0)"]
+      },
+      "interface-light": {
+        "role": "primary",
+        "displayName": "Glacial Interface Light",
+        "canonical": "oklch(97.5% 0.008 250)",
+        "tonalRamp": ["oklch(15% 0.008 250)", "oklch(27% 0.008 250)", "oklch(39% 0.008 250)", "oklch(51% 0.008 250)", "oklch(63% 0.008 250)", "oklch(75% 0.008 250)", "oklch(87% 0.008 250)", "oklch(97.5% 0.008 250)"]
+      },
+      "disruption-red": {
+        "role": "secondary",
+        "displayName": "Registration Red",
+        "canonical": "oklch(69% 0.17 356.8)",
+        "tonalRamp": ["oklch(15% 0.04 356.8)", "oklch(27% 0.07 356.8)", "oklch(39% 0.1 356.8)", "oklch(51% 0.13 356.8)", "oklch(63% 0.16 356.8)", "oklch(75% 0.15 356.8)", "oklch(87% 0.1 356.8)", "oklch(95% 0.05 356.8)"]
+      }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Quiet page-level hierarchy." },
+      "body": { "displayName": "Reading Body", "purpose": "Long-form conversation and Markdown." },
+      "label": { "displayName": "Technical Label", "purpose": "Short system facts and code-adjacent labels." }
+    },
+    "shadows": [
+      {
+        "name": "light-response",
+        "value": "0 0 8px color-mix(in oklch, var(--mind-ice) 34%, transparent)",
+        "purpose": "Semantic focus, connected state, and primary hover only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Restrained state transitions and identity resolution."
+      }
+    ],
+    "breakpoints": [
+      { "name": "conversation-collapse", "value": "1040px" },
+      { "name": "navigation-collapse", "value": "780px" },
+      { "name": "compact-message", "value": "520px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The singular glacial-white action on a surface.",
+      "html": "<button class=\"ds-primary\">Configure local model</button>",
+      "css": ".ds-primary { border: 0; border-radius: 6px; padding: 9px 13px; background: var(--mind-ice); color: var(--mind-black); font: 560 0.74rem var(--font-body); } .ds-primary:hover { background: var(--mind-white); box-shadow: 0 0 8px color-mix(in oklch, var(--mind-ice) 34%, transparent); } .ds-primary:focus-visible { outline: 2px solid var(--mind-ice); outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A quiet bordered action for reversible or supporting work.",
+      "html": "<button class=\"ds-secondary\">Stop runtime</button>",
+      "css": ".ds-secondary { border: 1px solid var(--mind-border); border-radius: 6px; padding: 9px 13px; background: transparent; color: var(--mind-muted); font: 560 0.74rem var(--font-body); } .ds-secondary:hover { border-color: var(--mind-border-strong); color: var(--mind-ice); } .ds-secondary:focus-visible { outline: 2px solid var(--mind-ice); outline-offset: 3px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A near-black field with a precise focus edge.",
+      "html": "<input class=\"ds-input\" value=\"http://127.0.0.1:8080\" aria-label=\"Local endpoint\">",
+      "css": ".ds-input { width: 320px; border: 1px solid var(--mind-border); border-radius: 6px; padding: 9px 10px; background: var(--mind-black-soft); color: var(--mind-text); font: 0.8rem var(--font-body); } .ds-input:focus { border-color: var(--mind-ice); outline: 2px solid var(--mind-ice); outline-offset: 3px; }"
+    },
+    {
+      "name": "Primary Navigation Item",
+      "kind": "nav",
+      "description": "A familiar navigation row whose active state collects light.",
+      "html": "<button class=\"ds-nav-active\">Conversations</button>",
+      "css": ".ds-nav-active { width: 180px; border: 0; border-radius: 6px; padding: 9px 10px; background: var(--mind-surface-raised); color: var(--mind-ice); font: 0.8rem var(--font-body); text-align: left; } .ds-nav-active:hover { color: var(--mind-white); } .ds-nav-active:focus-visible { outline: 2px solid var(--mind-ice); outline-offset: 3px; }"
+    },
+    {
+      "name": "Conversation Composer",
+      "kind": "custom",
+      "description": "A physically anchored but quiet writing surface.",
+      "html": "<div class=\"ds-composer\"><span>Write a message</span><button aria-label=\"Send\">↑</button></div>",
+      "css": ".ds-composer { display: flex; width: 520px; align-items: center; justify-content: space-between; border: 1px solid var(--mind-border-strong); border-radius: 10px; padding: 12px 8px 12px 15px; background: var(--mind-black-soft); color: var(--mind-muted); font: 0.9rem var(--font-body); } .ds-composer:focus-within { border-color: var(--mind-ice); } .ds-composer button { width: 31px; height: 31px; border: 0; border-radius: 6px; background: var(--mind-ice); color: var(--mind-black); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Black Ice Chamber",
+    "overview": "VOID Mind feels like a silent observatory at night: the room disappears, one cold instrument surface remains readable, and light collects only where attention is required. Darkness is the environment. Light is the interface.",
+    "keyCharacteristics": [
+      "Near-absolute black regions with almost no visible container edge.",
+      "Glacial-white state, focus, identity, and primary action light.",
+      "Proportional reading typography with mono reserved for short technical labels and code.",
+      "Restrained, state-driven motion with immediate reduced-motion resolution."
+    ],
+    "rules": [
+      { "name": "The Darkness Rule", "body": "Large regions remain black. A medium-gray application shell is prohibited.", "section": "colors" },
+      { "name": "The Earned Light Rule", "body": "White light indicates identity, focus, selection, active generation, or a primary action.", "section": "colors" },
+      { "name": "The Reading Rule", "body": "Conversation prose is never forced into monospace.", "section": "typography" },
+      { "name": "The Flat-Until-Active Rule", "body": "Resting surfaces use tone, spacing, or a hairline.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the environment at near-absolute black and reserve surfaces for functional hierarchy.",
+      "Do use glacial white for focus, active state, identity, and primary action.",
+      "Do expose clear hover, focus, active, disabled, loading, error, and reduced-motion behavior."
+    ],
+    "donts": [
+      "Don't build a gray-card dashboard or dense three-column inspector.",
+      "Don't use CRT scanlines, noise grids, phosphor, terminal green, or dense monospace telemetry.",
+      "Don't use permanent RGB text, cyberpunk neon, continuous glitch, or glowing controls everywhere."
+    ]
+  }
+}

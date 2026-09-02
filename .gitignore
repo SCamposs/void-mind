@@ -7,6 +7,12 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+node_modules/
+coverage/
+apps/desktop/dist/
+apps/desktop/src-tauri/target/
+.impeccable/live/runtime/
+.DS_Store
 
 # Local, generated, or potentially private model-lab data
 models/

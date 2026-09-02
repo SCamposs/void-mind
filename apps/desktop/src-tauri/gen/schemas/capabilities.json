@@ -1,0 +1,1 @@
+{"main":{"identifier":"main","description":"Minimal permissions for the VOID Mind main window.","local":true,"windows":["main"],"permissions":["core:default","dialog:allow-open"]}}

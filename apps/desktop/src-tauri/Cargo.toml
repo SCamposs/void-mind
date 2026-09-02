@@ -1,0 +1,12 @@
+[package]
+name = "void-mind-desktop"
+version = "0.2.0-0"
+edition = "2021"
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
