@@ -26,7 +26,50 @@ export type Conversation = {
   updatedAt: string;
   messages: MindMessage[];
   archivedBranches: ConversationBranch[];
+  workspaceId?: string;
+  pinned?: boolean;
+  providerBinding?: ProviderBinding;
+  providerOverride?: ProviderPreference;
+  contextKnowledgeIds?: string[];
   modelId?: string;
+};
+
+export type ProviderBinding = {
+  providerId: string;
+  remoteThreadId: string;
+};
+
+export type ProviderPreference = {
+  providerId: string;
+  modelId?: string;
+  reasoningEffort?: string;
+  serviceTier?: string;
+};
+
+export type Workspace = {
+  id: string;
+  name: string;
+  description: string;
+  instructions: string;
+  preference?: ProviderPreference;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type KnowledgeType = "markdown" | "text";
+export type KnowledgeStatus = "ready" | "error";
+
+export type KnowledgeItem = {
+  id: string;
+  title: string;
+  sourceFilename: string;
+  type: KnowledgeType;
+  workspaceId: string;
+  addedAt: string;
+  size: number;
+  managedPath: string;
+  content: string;
+  status: KnowledgeStatus;
 };
 
 export type ProfileId = "general" | "creative" | "analytical" | "concise" | "custom";
@@ -55,10 +98,25 @@ export type ProviderCapabilities = {
   cancellation: boolean;
   files?: boolean;
   vision?: boolean;
+  images?: boolean;
+  audio?: boolean;
   tools?: boolean;
   reasoning?: boolean;
   local?: boolean;
+  remote?: boolean;
   accountAuth?: boolean;
+  threadPersistence?: boolean;
+};
+
+export type ReasoningEffortDescriptor = {
+  id: string;
+  description: string;
+};
+
+export type ServiceTierDescriptor = {
+  id: string;
+  name: string;
+  description: string;
 };
 
 export type ModelDescriptor = {
@@ -74,6 +132,14 @@ export type ModelDescriptor = {
   context?: number;
   languages: string[];
   capabilities: string[];
+  description?: string;
+  isDefault?: boolean;
+  reasoningEfforts?: ReasoningEffortDescriptor[];
+  defaultReasoningEffort?: string;
+  inputModalities?: string[];
+  supportsPersonality?: boolean;
+  serviceTiers?: ServiceTierDescriptor[];
+  defaultServiceTier?: string;
   source?: string;
   license?: string;
   hash?: string;
@@ -105,12 +171,16 @@ export type UserPreferences = {
 export type MindState = {
   conversations: Conversation[];
   selectedConversationId: string | null;
+  workspaces: Workspace[];
+  selectedWorkspaceId: string | null;
+  knowledge: KnowledgeItem[];
   profiles: Profile[];
   selectedProfileId: ProfileId;
   customProfile: Profile;
   models: ModelDescriptor[];
   selectedModelId: string | null;
   selectedProviderId: string;
+  defaultPreference: ProviderPreference;
   runtime: LocalRuntimeConfig;
   preferences: UserPreferences;
 };

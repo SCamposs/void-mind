@@ -1,6 +1,8 @@
-import { Brain, MessageSquarePlus, PanelLeft } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { LlamaServerProvider } from "@void-mind/providers";
+import { BookOpen, Brain, MessageSquarePlus, PanelLeft, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { resolveProviderPreference } from "@void-mind/mind-core";
+import { CodexProvider, LlamaServerProvider, type MindProvider } from "@void-mind/providers";
+import { codexBridge } from "../../lib/codex-bridge";
 import { useMindStore, activeSettings } from "../../stores/mind-store";
 import { useMediaQuery } from "../../lib/use-media-query";
 import { Composer } from "./Composer";
@@ -9,19 +11,36 @@ import { MessageItem } from "./MessageItem";
 
 export function ConversationScreen() {
   const state = useMindStore();
+  const queuedGenerationId = state.queuedGenerationId;
+  const queueGeneration = state.queueGeneration;
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
   const compactHistory = useMediaQuery("(max-width: 1040px)");
   const scroll = useRef<HTMLDivElement>(null);
   const historyPanel = useRef<HTMLDivElement>(null);
   const historyToggle = useRef<HTMLButtonElement>(null);
   const controller = useRef<AbortController | null>(null);
-  const provider = useRef<LlamaServerProvider | null>(null);
+  const provider = useRef<MindProvider | null>(null);
   const activeAssistantId = useRef<string | null>(null);
   const conversation = useMemo(
     () => state.conversations.find((item) => item.id === state.selectedConversationId),
     [state.conversations, state.selectedConversationId]
   );
-  const selectedModel = state.models.find((model) => model.id === state.selectedModelId);
+  const workspace = state.workspaces.find((item) => item.id === conversation?.workspaceId);
+  const resolution = resolveProviderPreference({
+    conversation,
+    workspace,
+    global: state.defaultPreference,
+    availableProviderIds: [...new Set(state.models.map((model) => model.providerId))],
+    availableModelIds: state.models.map((model) => model.id)
+  });
+  const selectedModel = state.models.find(
+    (model) =>
+      model.id === (resolution.preference.modelId ?? state.selectedModelId) &&
+      model.providerId === resolution.preference.providerId
+  ) ?? state.models.find(
+    (model) => model.providerId === resolution.preference.providerId && model.isDefault
+  );
   const generating = state.generationState === "connecting" || state.generationState === "generating";
 
   useEffect(() => {
@@ -48,32 +67,75 @@ export function ConversationScreen() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [compactHistory, historyOpen]);
 
-  const runGeneration = async () => {
+  const runGeneration = useCallback(async () => {
     const snapshot = useMindStore.getState();
     const current = snapshot.conversations.find(
       (item) => item.id === snapshot.selectedConversationId
     );
-    const model = snapshot.models.find((item) => item.id === snapshot.selectedModelId);
-    if (!current || !model) return;
+    if (!current) return;
+    const currentWorkspace = snapshot.workspaces.find((item) => item.id === current.workspaceId);
+    const providerResolution = resolveProviderPreference({
+      conversation: current,
+      workspace: currentWorkspace,
+      global: snapshot.defaultPreference,
+      availableProviderIds: [...new Set(snapshot.models.map((item) => item.providerId))],
+      availableModelIds: snapshot.models.map((item) => item.id)
+    });
+    const model = snapshot.models.find((item) =>
+      item.id === (providerResolution.preference.modelId ?? snapshot.selectedModelId) &&
+      item.providerId === providerResolution.preference.providerId
+    ) ?? snapshot.models.find((item) =>
+      item.providerId === providerResolution.preference.providerId && item.isDefault
+    );
+    if (!providerResolution.available || !providerResolution.modelAvailable || !model) {
+      snapshot.setGeneration("error", "The selected provider or model is unavailable. VOID Mind did not switch providers automatically.");
+      return;
+    }
 
     const assistantId = snapshot.appendMessage("assistant", "", "streaming");
     activeAssistantId.current = assistantId;
     const abort = new AbortController();
     controller.current = abort;
-    const localProvider = new LlamaServerProvider(snapshot.runtime.endpoint);
-    provider.current = localProvider;
+    const activeProvider: MindProvider = model.providerId === "openai-codex"
+      ? new CodexProvider(codexBridge)
+      : new LlamaServerProvider(snapshot.runtime.endpoint);
+    provider.current = activeProvider;
     snapshot.setGeneration("connecting");
     let content = "";
+    const selectedKnowledge = snapshot.knowledge.filter(
+      (item) => current.contextKnowledgeIds?.includes(item.id) && item.workspaceId === current.workspaceId
+    );
+    const contextInstructions = [
+      currentWorkspace?.instructions,
+      ...selectedKnowledge.map((item) => `Knowledge source: ${item.title}\n${item.content}`)
+    ].filter(Boolean).join("\n\n");
+    const settings = activeSettings(snapshot);
 
     try {
-      for await (const event of localProvider.generate(
+      for await (const event of activeProvider.generate(
         {
+          conversationId: current.id,
           messages: current.messages,
           model,
-          settings: activeSettings(useMindStore.getState())
+          settings: contextInstructions
+            ? { ...settings, systemInstructions: [settings.systemInstructions, contextInstructions].filter(Boolean).join("\n\n") }
+            : settings,
+          remoteThreadId:
+            current.providerBinding?.providerId === model.providerId
+              ? current.providerBinding.remoteThreadId
+              : undefined,
+          contextInstructions,
+          reasoningEffort: providerResolution.preference.reasoningEffort ?? model.defaultReasoningEffort,
+          serviceTier: providerResolution.preference.serviceTier ?? model.defaultServiceTier
         },
         abort.signal
       )) {
+        if (event.type === "binding") {
+          useMindStore.getState().setConversationBinding(current.id, {
+            providerId: model.providerId,
+            remoteThreadId: event.remoteThreadId
+          });
+        }
         if (event.type === "start") snapshot.setGeneration("generating");
         if (event.type === "token") {
           content += event.content;
@@ -83,7 +145,7 @@ export function ConversationScreen() {
         if (event.type === "done") {
           useMindStore.getState().updateMessage(
             assistantId,
-            content || "The local model returned an empty response.",
+            content || "The provider returned an empty response.",
             "complete"
           );
           useMindStore.getState().setGeneration("idle");
@@ -92,7 +154,7 @@ export function ConversationScreen() {
       if (useMindStore.getState().generationState === "generating") {
         useMindStore.getState().updateMessage(
           assistantId,
-          content || "The local model returned an empty response.",
+          content || "The provider returned an empty response.",
           "complete"
         );
         useMindStore.getState().setGeneration("idle");
@@ -115,7 +177,13 @@ export function ConversationScreen() {
       provider.current = null;
       activeAssistantId.current = null;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (queuedGenerationId !== conversation?.id) return;
+    queueGeneration(null);
+    void runGeneration();
+  }, [conversation?.id, queueGeneration, queuedGenerationId, runGeneration]);
 
   const send = (content: string) => {
     state.appendMessage("user", content);
@@ -168,24 +236,46 @@ export function ConversationScreen() {
           </button>
           <div>
             <h1>{conversation?.title ?? "Conversations"}</h1>
-            <p>{selectedModel ? selectedModel.displayName : "No model active"}</p>
+            <p>{selectedModel ? `${selectedModel.displayName} · ${resolution.source}` : "No model active"}</p>
           </div>
+          {conversation && workspace && (
+            <button className="context-button" type="button" onClick={() => setContextOpen(!contextOpen)} aria-expanded={contextOpen}>
+              <BookOpen size={15} /> Context
+              {(conversation.contextKnowledgeIds?.length ?? 0) > 0 && <span>{conversation.contextKnowledgeIds?.length}</span>}
+            </button>
+          )}
         </header>
+
+        {contextOpen && conversation && workspace && (
+          <aside className="context-panel" aria-label="Conversation context">
+            <header><div><strong>{workspace.name}</strong><span>Workspace context</span></div><button type="button" onClick={() => setContextOpen(false)} aria-label="Close context"><X size={15} /></button></header>
+            {workspace.instructions && <p>{workspace.instructions}</p>}
+            <div className="context-sources">
+              {state.knowledge.filter((item) => item.workspaceId === workspace.id).map((item) => (
+                <label key={item.id}>
+                  <input type="checkbox" checked={conversation.contextKnowledgeIds?.includes(item.id) ?? false} onChange={() => state.toggleConversationKnowledge(conversation.id, item.id)} />
+                  <span><strong>{item.title}</strong><small>{item.sourceFilename}</small></span>
+                </label>
+              ))}
+              {!state.knowledge.some((item) => item.workspaceId === workspace.id) && <span className="section-empty">No knowledge sources in this workspace.</span>}
+            </div>
+          </aside>
+        )}
 
         {!selectedModel ? (
           <div className="conversation-empty">
             <Brain size={28} strokeWidth={1.35} aria-hidden="true" />
             <h2>No model is active.</h2>
-            <p>Connect a local llama-server or configure a managed local model before starting.</p>
+            <p>Connect ChatGPT through Codex or choose an available local model before starting.</p>
             <button className="primary-button" type="button" onClick={() => state.setSection("models")}>
-              Configure a local model
+              Configure intelligence
             </button>
           </div>
         ) : !conversation || conversation.messages.length === 0 ? (
           <div className="conversation-empty">
             <MessageSquarePlus size={28} strokeWidth={1.35} aria-hidden="true" />
             <h2>What are you thinking about?</h2>
-            <p>Ask, explore, draft, study, or reason with the active local model.</p>
+            <p>Ask, explore, draft, study, or reason with the selected intelligence.</p>
           </div>
         ) : (
           <div className="messages" ref={scroll} aria-live="polite">
@@ -206,7 +296,7 @@ export function ConversationScreen() {
               ))}
               {state.generationError && (
                 <div className="inline-error" role="alert">
-                  <strong>Local response interrupted.</strong>
+                  <strong>Response interrupted.</strong>
                   <span>{state.generationError}</span>
                 </div>
               )}
@@ -216,10 +306,23 @@ export function ConversationScreen() {
 
         <Composer
           models={state.models}
-          selectedModelId={state.selectedModelId}
+          selectedModelId={selectedModel?.id ?? null}
           generating={generating}
           disabled={!selectedModel}
-          onModelChange={state.selectModel}
+          onModelChange={(id) => {
+            const model = state.models.find((item) => item.id === id);
+            if (!model) return;
+            if (conversation) {
+              state.setConversationOverride(conversation.id, {
+                providerId: model.providerId,
+                modelId: model.id,
+                reasoningEffort: model.defaultReasoningEffort,
+                serviceTier: model.defaultServiceTier
+              });
+            } else {
+              state.setDefaultPreference({ providerId: model.providerId, modelId: model.id });
+            }
+          }}
           onSend={send}
           onStop={stop}
         />

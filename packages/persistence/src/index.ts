@@ -3,26 +3,35 @@ import {
   DEFAULT_GENERATION_SETTINGS,
   DEFAULT_PROFILES,
   type Conversation,
+  type KnowledgeItem,
   type MindState,
   type ModelDescriptor,
   type Profile,
-  type ProfileId
+  type ProfileId,
+  type ProviderPreference,
+  type Workspace
 } from "@void-mind/mind-core";
 
 export const MIND_STORAGE_KEY = "void-mind:state";
-export const MIND_STORAGE_VERSION = 2;
+export const MIND_STORAGE_VERSION = 3;
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export const DEFAULT_MIND_STATE: MindState = {
   conversations: [],
   selectedConversationId: null,
+  workspaces: [],
+  selectedWorkspaceId: null,
+  knowledge: [],
   profiles: structuredClone(DEFAULT_PROFILES),
   selectedProfileId: "general",
   customProfile: structuredClone(DEFAULT_CUSTOM_PROFILE),
   models: [],
   selectedModelId: null,
-  selectedProviderId: "void-local",
+  selectedProviderId: "openai-codex",
+  defaultPreference: {
+    providerId: "openai-codex"
+  },
   runtime: {
     mode: "external",
     endpoint: "http://127.0.0.1:8080",
@@ -68,7 +77,80 @@ function conversations(value: unknown): Conversation[] {
       archivedBranches: Array.isArray(item.archivedBranches)
         ? (item.archivedBranches as Conversation["archivedBranches"])
         : [],
+      workspaceId: typeof item.workspaceId === "string" ? item.workspaceId : undefined,
+      pinned: item.pinned === true,
+      providerBinding:
+        isRecord(item.providerBinding) &&
+        typeof item.providerBinding.providerId === "string" &&
+        typeof item.providerBinding.remoteThreadId === "string"
+          ? {
+              providerId: item.providerBinding.providerId,
+              remoteThreadId: item.providerBinding.remoteThreadId
+            }
+          : undefined,
+      providerOverride: providerPreference(item.providerOverride),
+      contextKnowledgeIds: Array.isArray(item.contextKnowledgeIds)
+        ? item.contextKnowledgeIds.filter((id): id is string => typeof id === "string")
+        : [],
       modelId: typeof item.modelId === "string" ? item.modelId : undefined
+    }));
+}
+
+function providerPreference(value: unknown): ProviderPreference | undefined {
+  if (!isRecord(value) || typeof value.providerId !== "string") return undefined;
+  return {
+    providerId: value.providerId,
+    modelId: typeof value.modelId === "string" ? value.modelId : undefined,
+    reasoningEffort:
+      typeof value.reasoningEffort === "string" ? value.reasoningEffort : undefined,
+    serviceTier: typeof value.serviceTier === "string" ? value.serviceTier : undefined
+  };
+}
+
+function workspaces(value: unknown): Workspace[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (item): item is Record<string, unknown> =>
+        isRecord(item) && typeof item.id === "string" && typeof item.name === "string"
+    )
+    .map((item) => ({
+      id: item.id as string,
+      name: item.name as string,
+      description: typeof item.description === "string" ? item.description : "",
+      instructions: typeof item.instructions === "string" ? item.instructions : "",
+      preference: providerPreference(item.preference),
+      createdAt: typeof item.createdAt === "string" ? item.createdAt : new Date(0).toISOString(),
+      updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : new Date(0).toISOString()
+    }));
+}
+
+function knowledge(value: unknown, validWorkspaceIds: Set<string>): KnowledgeItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (item): item is Record<string, unknown> =>
+        isRecord(item) &&
+        typeof item.id === "string" &&
+        typeof item.title === "string" &&
+        typeof item.sourceFilename === "string" &&
+        typeof item.workspaceId === "string" &&
+        validWorkspaceIds.has(item.workspaceId) &&
+        (item.type === "markdown" || item.type === "text") &&
+        typeof item.content === "string" &&
+        typeof item.managedPath === "string"
+    )
+    .map((item) => ({
+      id: item.id as string,
+      title: item.title as string,
+      sourceFilename: item.sourceFilename as string,
+      type: item.type as KnowledgeItem["type"],
+      workspaceId: item.workspaceId as string,
+      addedAt: typeof item.addedAt === "string" ? item.addedAt : new Date(0).toISOString(),
+      size: typeof item.size === "number" && item.size >= 0 ? item.size : 0,
+      managedPath: item.managedPath as string,
+      content: item.content as string,
+      status: item.status === "error" ? "error" : "ready"
     }));
 }
 
@@ -101,6 +183,17 @@ export function migrateMindState(value: unknown): MindState {
   const settings = isRecord(source.settings) ? source.settings : {};
   const runtime = isRecord(source.runtime) ? source.runtime : {};
   const preferences = isRecord(source.preferences) ? source.preferences : {};
+  const foundWorkspaces = workspaces(source.workspaces);
+  const validWorkspaceIds = new Set(foundWorkspaces.map((workspace) => workspace.id));
+  const defaultPreference =
+    providerPreference(source.defaultPreference) ??
+    {
+      providerId:
+        typeof source.selectedProviderId === "string"
+          ? source.selectedProviderId
+          : DEFAULT_MIND_STATE.defaultPreference.providerId,
+      modelId: typeof source.selectedModelId === "string" ? source.selectedModelId : undefined
+    };
   const migrated: MindState = {
     ...structuredClone(DEFAULT_MIND_STATE),
     conversations: foundConversations,
@@ -108,6 +201,13 @@ export function migrateMindState(value: unknown): MindState {
       typeof (source.selectedConversationId ?? source.activeChatId) === "string"
         ? String(source.selectedConversationId ?? source.activeChatId)
         : null,
+    workspaces: foundWorkspaces,
+    selectedWorkspaceId:
+      typeof source.selectedWorkspaceId === "string" &&
+      validWorkspaceIds.has(source.selectedWorkspaceId)
+        ? source.selectedWorkspaceId
+        : null,
+    knowledge: knowledge(source.knowledge, validWorkspaceIds),
     profiles: profiles(source.profiles),
     selectedProfileId: profileId(source.selectedProfileId ?? source.profile),
     customProfile: isRecord(source.customProfile)
@@ -116,7 +216,10 @@ export function migrateMindState(value: unknown): MindState {
     models: models(source.models),
     selectedModelId: typeof source.selectedModelId === "string" ? source.selectedModelId : null,
     selectedProviderId:
-      typeof source.selectedProviderId === "string" ? source.selectedProviderId : "void-local",
+      typeof source.selectedProviderId === "string"
+        ? source.selectedProviderId
+        : defaultPreference.providerId,
+    defaultPreference,
     runtime: {
       ...DEFAULT_MIND_STATE.runtime,
       ...(runtime as Partial<MindState["runtime"]>)

@@ -37,6 +37,53 @@ describe("versioned persistence", () => {
     });
     expect(state.selectedConversationId).toBe("chat-1");
     expect(state.runtime.endpoint).toBe("http://localhost:9090");
+    expect(state.workspaces).toEqual([]);
+    expect(state.defaultPreference.providerId).toBe("openai-codex");
+  });
+
+  it("persists workspace ownership, instructions, and explicit knowledge context", () => {
+    const state = migrateMindState({
+      workspaces: [{
+        id: "workspace-1",
+        name: "Study",
+        description: "Course notes",
+        instructions: "Explain concepts simply.",
+        preference: { providerId: "openai-codex", modelId: "codex:model" },
+        createdAt: "2026-09-02T00:00:00.000Z",
+        updatedAt: "2026-09-02T00:00:00.000Z"
+      }],
+      selectedWorkspaceId: "workspace-1",
+      knowledge: [{
+        id: "knowledge-1",
+        title: "Notes",
+        sourceFilename: "notes.md",
+        type: "markdown",
+        workspaceId: "workspace-1",
+        addedAt: "2026-09-02T00:00:00.000Z",
+        size: 42,
+        managedPath: "knowledge/knowledge-1.md",
+        content: "# Notes",
+        status: "ready"
+      }]
+    });
+    expect(state.selectedWorkspaceId).toBe("workspace-1");
+    expect(state.workspaces[0].instructions).toBe("Explain concepts simply.");
+    expect(state.knowledge[0].sourceFilename).toBe("notes.md");
+  });
+
+  it("drops knowledge whose workspace no longer exists", () => {
+    const state = migrateMindState({
+      knowledge: [{
+        id: "knowledge-1",
+        title: "Orphan",
+        sourceFilename: "orphan.txt",
+        type: "text",
+        workspaceId: "missing",
+        managedPath: "knowledge/knowledge-1.txt",
+        content: "text"
+      }]
+    });
+    expect(state.knowledge).toEqual([]);
   });
 
   it("persists conversations and omits them when retention is disabled", () => {

@@ -154,8 +154,9 @@ export function SettingsScreen() {
             <h2>Privacy boundary</h2>
           </div>
           <p>
-            With VOID Local, conversations and model execution stay on this device. No account,
-            API key, telemetry, hidden memory, or remote provider is used.
+            {state.selectedProviderId === "openai-codex"
+              ? "When ChatGPT is active, your prompt, workspace instructions, and only the knowledge sources selected for that conversation are sent through the official Codex runtime. Account credentials remain runtime-managed."
+              : "With VOID Local, prompts and model execution remain on this device through the configured loopback runtime."}
           </p>
         </section>
       </div>

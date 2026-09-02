@@ -72,6 +72,7 @@ describe("llama-server provider", () => {
     );
     const events = [];
     for await (const event of provider.generate({
+      conversationId: "conversation-1",
       messages: [],
       model: {
         id: "model",
@@ -117,6 +118,7 @@ describe("llama-server provider", () => {
       }) as typeof fetch
     );
     const iterator = provider.generate({
+      conversationId: "conversation-1",
       messages: [],
       model: {
         id: "model",

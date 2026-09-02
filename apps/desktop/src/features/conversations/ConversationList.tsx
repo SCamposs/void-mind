@@ -1,4 +1,4 @@
-import { Check, Edit3, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, Edit3, Pin, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { searchConversations } from "@void-mind/mind-core";
 import { useMindStore } from "../../stores/mind-store";
@@ -10,12 +10,15 @@ export function ConversationList() {
   const select = useMindStore((state) => state.selectConversation);
   const rename = useMindStore((state) => state.renameConversation);
   const remove = useMindStore((state) => state.deleteConversation);
+  const pin = useMindStore((state) => state.pinConversation);
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const filtered = useMemo(
-    () => searchConversations(conversations, query),
+    () => [...searchConversations(conversations, query)].sort((a, b) =>
+      Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.updatedAt.localeCompare(a.updatedAt)
+    ),
     [conversations, query]
   );
 
@@ -91,6 +94,14 @@ export function ConversationList() {
                     <span>{conversation.messages.at(-1)?.content || "Empty conversation"}</span>
                   </button>
                   <div className="row-actions">
+                    <button
+                      type="button"
+                      className={conversation.pinned ? "is-pinned" : ""}
+                      onClick={() => pin(conversation.id, !conversation.pinned)}
+                      aria-label={conversation.pinned ? `Unpin ${conversation.title}` : `Pin ${conversation.title}`}
+                    >
+                      <Pin size={13} fill={conversation.pinned ? "currentColor" : "none"} />
+                    </button>
                     <button
                       type="button"
                       onClick={() => beginRename(conversation.id, conversation.title)}

@@ -13,13 +13,19 @@ export type ProviderHealth = {
 };
 
 export type GenerationRequest = {
+  conversationId: string;
   messages: MindMessage[];
   model: ModelDescriptor;
   settings: GenerationSettings;
+  remoteThreadId?: string;
+  contextInstructions?: string;
+  reasoningEffort?: string;
+  serviceTier?: string;
 };
 
 export type ProviderEvent =
-  | { type: "start" }
+  | { type: "binding"; remoteThreadId: string }
+  | { type: "start"; turnId?: string }
   | { type: "token"; content: string }
   | { type: "done"; finishReason?: string }
   | { type: "error"; message: string; recoverable: boolean };

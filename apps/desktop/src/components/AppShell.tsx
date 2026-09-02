@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Brain,
+  House,
   Menu,
   MessageSquareText,
   Settings,
@@ -12,16 +13,18 @@ import { useEffect, useRef } from "react";
 import { useMediaQuery } from "../lib/use-media-query";
 import { useMindStore, type AppSection } from "../stores/mind-store";
 import { VoidMark } from "./VoidMark";
+import { QuickSwitcher } from "./QuickSwitcher";
 
 const items: Array<{
   id: AppSection;
   label: string;
   icon: typeof MessageSquareText;
 }> = [
+  { id: "home", label: "Home", icon: House },
   { id: "conversations", label: "Conversations", icon: MessageSquareText },
   { id: "workspaces", label: "Workspaces", icon: Shapes },
   { id: "knowledge", label: "Knowledge", icon: BookOpen },
-  { id: "models", label: "Models", icon: Brain },
+  { id: "models", label: "Intelligence", icon: Brain },
   { id: "settings", label: "Settings", icon: Settings }
 ];
 
@@ -30,6 +33,8 @@ export function AppShell({ children }: PropsWithChildren) {
   const open = useMindStore((state) => state.navigationOpen);
   const setSection = useMindStore((state) => state.setSection);
   const setOpen = useMindStore((state) => state.setNavigationOpen);
+  const account = useMindStore((state) => state.codexAccount);
+  const selectedProviderId = useMindStore((state) => state.selectedProviderId);
   const compact = useMediaQuery("(max-width: 780px)");
   const menuButton = useRef<HTMLButtonElement>(null);
   const navigation = useRef<HTMLElement>(null);
@@ -63,13 +68,17 @@ export function AppShell({ children }: PropsWithChildren) {
         <button
           className="brand-button"
           type="button"
-          onClick={() => setSection("conversations")}
-          aria-label="Open conversations"
+          onClick={() => setSection("home")}
+          aria-label="Open Home"
         >
           <VoidMark />
           <span>VOID <strong>MIND</strong></span>
         </button>
-        <span className="privacy-note">Local by default</span>
+        <span className="privacy-note">
+          {selectedProviderId === "openai-codex"
+            ? account?.state === "connected" ? "ChatGPT connected" : "ChatGPT not connected"
+            : "Local runtime"}
+        </span>
       </header>
 
       <div className="app-body">
@@ -94,7 +103,6 @@ export function AppShell({ children }: PropsWithChildren) {
               </button>
             ))}
           </div>
-          <p>Private local storage. No telemetry.</p>
         </nav>
         {open && (
           <button
@@ -106,6 +114,7 @@ export function AppShell({ children }: PropsWithChildren) {
         )}
         <main className="primary-surface">{children}</main>
       </div>
+      <QuickSwitcher />
     </div>
   );
 }
