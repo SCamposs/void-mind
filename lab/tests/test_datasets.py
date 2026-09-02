@@ -8,7 +8,7 @@ from void_mind.datasets import (
     split_records,
 )
 
-SAMPLE = Path("samples/datasets/tiny-conversations.jsonl")
+SAMPLE = Path("lab/samples/datasets/tiny-conversations.jsonl")
 
 
 def test_sample_dataset_validates() -> None:

@@ -20,4 +20,4 @@ Every record includes provenance, license, and privacy classification. Public ex
 
 ## Model lineage
 
-The JSON Schema at `src/void_mind/contracts/model-manifest.schema.json` is the portable contract. `A0` identifies the first compatible imported model. Later exports increment the label and list their base, fine-tuning, merge, and quantization ancestry. Every distributed manifest records the final GGUF SHA-256 and `created_by: SCamposs`.
+The JSON Schema at `lab/src/void_mind/contracts/model-manifest.schema.json` is the portable contract. `A0` identifies the first compatible imported model. Later exports increment the label and list their base, fine-tuning, merge, and quantization ancestry. Every distributed manifest records the final GGUF SHA-256 and `created_by: SCamposs`.

@@ -1,7 +1,7 @@
 {
   "base_model": "models/base-model",
-  "train_dataset": "samples/datasets/tiny-conversations.jsonl",
-  "eval_dataset": "samples/datasets/tiny-conversations.jsonl",
+  "train_dataset": "lab/samples/datasets/tiny-conversations.jsonl",
+  "eval_dataset": "lab/samples/datasets/tiny-conversations.jsonl",
   "output_dir": "outputs/a1-adapter",
   "method": "qlora",
   "seed": 42,
