@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useMindStore } from "../../stores/mind-store";
+import { deleteKnowledgeFile } from "../../lib/knowledge-bridge";
 
 export function WorkspacesScreen() {
   const state = useMindStore();
@@ -8,11 +9,15 @@ export function WorkspacesScreen() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setName(workspace?.name ?? "");
     setDescription(workspace?.description ?? "");
     setInstructions(workspace?.instructions ?? "");
+    setConfirmDelete(false);
+    setError("");
   }, [workspace]);
 
   const create = (event: FormEvent) => {
@@ -23,6 +28,18 @@ export function WorkspacesScreen() {
   const save = () => {
     if (!workspace || !name.trim()) return;
     state.updateWorkspace(workspace.id, { name, description, instructions });
+  };
+
+  const remove = async () => {
+    if (!workspace) return;
+    setError("");
+    try {
+      const sources = state.knowledge.filter((item) => item.workspaceId === workspace.id);
+      await Promise.all(sources.map((item) => deleteKnowledgeFile(item.id)));
+      state.deleteWorkspace(workspace.id);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
   };
 
   return (
@@ -68,8 +85,11 @@ export function WorkspacesScreen() {
             </label>
             <div className="button-row">
               <button className="primary-button" type="button" onClick={save}>Save changes</button>
-              <button className="danger-button" type="button" onClick={() => state.deleteWorkspace(workspace.id)}><Trash2 size={14} /> Delete workspace</button>
+              {confirmDelete ? (
+                <div className="inline-confirm"><span>Delete this workspace and its imported copies?</span><button type="button" onClick={() => void remove()}>Delete</button><button type="button" onClick={() => setConfirmDelete(false)}>Keep</button></div>
+              ) : <button className="danger-button" type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Delete workspace</button>}
             </div>
+            {error && <p className="inline-error" role="alert">{error}</p>}
           </div>
         ) : <div className="workspace-blank"><h2>A room for ongoing work.</h2><p>Create a workspace to group conversations, instructions, and explicit knowledge sources.</p></div>}
       </div>

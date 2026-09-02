@@ -36,7 +36,7 @@
     "active": true,
     "targets": "all",
     "publisher": "SCamposs",
-    "shortDescription": "A local-first AI workspace.",
+    "shortDescription": "A standalone intelligence environment for focused conversations and contextual work.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

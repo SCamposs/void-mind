@@ -43,7 +43,9 @@ desktop UI
   └── persistence ──> mind-core
 
 Tauri native runtime
-  └── selected llama-server process only
+  ├── official Codex app-server child process
+  ├── app-managed Knowledge copies
+  └── selected llama-server process
 
 Python lab
   └── independent Python and optional ML dependencies
@@ -59,13 +61,13 @@ The desktop store owns selection and ephemeral generation status. The provider o
 
 ## Providers
 
-**Implemented.** `MindProvider` exposes identity, capability discovery, health, models, generation events, and cancellation. VOID Local implements llama-server-compatible health, model discovery, and streaming chat completion over a loopback-only origin.
+**Implemented.** `MindProvider` exposes identity, capability discovery, health, models, generation events, persistent bindings, and cancellation. Codex translates the official app-server protocol into that boundary. VOID Local implements llama-server-compatible health, model discovery, and streaming chat completion over a loopback-only origin.
 
-**Future.** Codex, OpenAI API, Anthropic, Gemini, and other providers must implement the same boundary. The proposed Codex provider uses official Codex app-server and account mechanisms. It does not redefine the product as a coding tool.
+Provider resolution is deterministic: conversation override, then workspace preference, then global default. Unavailable choices surface an error; the product never silently falls back to another provider.
 
 ## Persistence
 
-**Implemented.** A versioned JSON envelope stores conversations, selected conversation, profiles, provider and model selection, safe preferences, and non-secret local-runtime configuration. Missing, malformed, partial, and legacy chat-shaped values fall back or migrate to safe defaults. Persistence failures surface in Settings.
+**Implemented.** A versioned JSON envelope stores conversations, Codex thread identifiers, workspaces, Knowledge metadata/content, profiles, provider preferences, safe settings, and non-secret local-runtime configuration. Missing, malformed, partial, and legacy chat-shaped values fall back or migrate to safe defaults. Runtime account state and credentials are not persisted by the application.
 
 Secrets are not required for the local provider and are not stored. A future remote-provider credential layer must use secure native storage behind a separate contract.
 
@@ -77,9 +79,9 @@ It does not expose arbitrary command arguments, a shell, remote binding, filesys
 
 ## Workspaces, Knowledge, and Memory
 
-**Foundation.** Workspaces and Knowledge have navigation surfaces and documented domain intent. There are no fake workspaces, statistics, indexing jobs, or RAG pipeline.
+**Implemented.** A Workspace groups conversations, durable instructions, explicit Knowledge sources, and an optional provider/model preference. Imported `.md` and `.txt` sources are validated, copied into app data without changing the original, persisted with visible content, and attached explicitly per conversation.
 
-**Future.** A Workspace groups conversations, explicit sources, instructions, memory controls, and preferred provider/model settings. Knowledge contains user-supplied sources. Memory remains separately inspectable and controllable, with no silent permanent memory by default.
+**Future.** Indexing, retrieval, and Memory remain separate domains. Memory must remain inspectable and controllable, with no silent permanent memory by default.
 
 ## Model lab
 

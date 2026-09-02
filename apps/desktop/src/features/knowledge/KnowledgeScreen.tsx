@@ -7,6 +7,7 @@ import { useMindStore } from "../../stores/mind-store";
 export function KnowledgeScreen() {
   const state = useMindStore();
   const [message, setMessage] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const workspace = state.workspaces.find((item) => item.id === state.selectedWorkspaceId);
   const items = workspace ? state.knowledge.filter((item) => item.workspaceId === workspace.id) : [];
 
@@ -64,7 +65,9 @@ export function KnowledgeScreen() {
           <article key={item.id}>
             <FileText size={18} />
             <div><h2>{item.title}</h2><p>{item.sourceFilename} · {(item.size / 1024).toFixed(1)} KB</p><pre>{item.content.slice(0, 280)}{item.content.length > 280 ? "…" : ""}</pre></div>
-            <button type="button" onClick={() => void remove(item.id)} aria-label={`Remove ${item.title}`}><Trash2 size={15} /></button>
+            {deletingId === item.id ? (
+              <div className="knowledge-confirm"><span>Remove?</span><button type="button" onClick={() => void remove(item.id)}>Yes</button><button type="button" onClick={() => setDeletingId(null)}>No</button></div>
+            ) : <button type="button" onClick={() => setDeletingId(item.id)} aria-label={`Remove ${item.title}`}><Trash2 size={15} /></button>}
           </article>
         ))}
         {workspace && !items.length && <p className="section-empty">No sources imported into this workspace.</p>}

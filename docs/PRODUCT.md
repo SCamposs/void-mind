@@ -6,11 +6,11 @@ product
 
 ## Users
 
-VOID Mind is for people who want a focused desktop space for natural conversation, reasoning, brainstorming, writing, study, explanation, and personal knowledge work with local AI. The primary workflow is an uninterrupted conversation with an explicitly selected model, with technical configuration kept outside the reading surface.
+VOID Mind is for people who want a focused desktop space for natural conversation, reasoning, brainstorming, writing, study, explanation, and personal knowledge work. The primary workflow is an uninterrupted conversation with an explicitly selected intelligence and visible context, with technical configuration kept outside the reading surface.
 
 ## Product Purpose
 
-VOID Mind is a standalone, general-purpose, local-first AI workspace. Success means it is useful as a conversation product today while its core, provider, persistence, and model-lab boundaries can support future Workspaces, Knowledge, Memory, and optional providers without turning the app into an IDE or agent dashboard.
+VOID Mind is a standalone, general-purpose intelligence environment. ChatGPT through the official Codex runtime is the primary experience; local llama.cpp remains a supported secondary provider. The product is not an IDE or agent dashboard.
 
 ## Brand Personality
 
@@ -34,7 +34,7 @@ VOID Mind must not resemble:
 ## Design Principles
 
 1. Conversation comes first. Content, reading, and a calm composer dominate the primary surface.
-2. Local behavior is explicit. Provider location, privacy, and failure states are truthful and legible.
+2. Provider behavior is explicit. Location, selected context, privacy, inheritance, and failure states are truthful and legible.
 3. Complexity moves outward. Models and Settings own technical controls; chat remains quiet.
 4. Foundations stay honest. Future surfaces explain their boundary without fabricated data.
 5. Shared identity does not mean cloned appearance. VOID provides the exact symbol and proven runtime lessons; VOID Mind establishes its own thinking-space visual system.
@@ -47,13 +47,14 @@ The implemented target is WCAG 2.2 AA for text contrast, keyboard access, semant
 
 | Surface | Status | Scope |
 | --- | --- | --- |
-| Conversations | Implemented | Persisted conversation management and streamed local chat |
-| Models | Implemented | Local endpoint discovery and managed-runtime configuration |
+| Home | Implemented | Luminous entry composer, recent conversations, workspaces, and provider state |
+| Conversations | Implemented | Persisted management, Codex thread binding, streaming, interruption, and context inspection |
+| Intelligence | Implemented | ChatGPT account, live Codex catalog, adaptive reasoning/tier controls, and local runtime |
 | Settings | Implemented | Profiles, advanced generation controls, retention, and intro preference |
-| Workspaces | Foundation | Deliberate empty state and documented future boundary |
-| Knowledge | Foundation | Deliberate empty state and documented future boundary |
+| Workspaces | Implemented | CRUD, instructions, conversation grouping, and inherited provider preference |
+| Knowledge | Implemented first layer | Explicit Markdown/text imports, managed copies, previews, and conversation selection |
 | Memory | Future | Inspectable, editable, disableable, deletable, exportable user control |
-| Remote providers | Future | Explicit provider-specific privacy and credential handling |
+| Additional remote providers | Future | Explicit provider-specific privacy and credential handling |
 | Mind Mini | Future | Reduced subset of shared core inside VOID |
 | Model Lab UI | Future | The Python lab remains canonical today |
 
@@ -61,6 +62,6 @@ The implemented target is WCAG 2.2 AA for text contrast, keyboard access, semant
 
 Knowledge is explicit material supplied by the user. Memory is information deliberately saved or learned from usage. They remain separate domains.
 
-VOID Mind may gain optional tools later, but arbitrary shell execution, repository mutation, broad filesystem access, hidden telemetry, and autonomous commands are outside the product foundation.
+The Codex provider is intentionally conversation-only: read-only sandbox, approvals disabled, neutral workspace, no exposed tool workflow, and no autonomous commands. Knowledge is transmitted only when visibly selected for a conversation using a remote provider.
 
 Orbit remains part of the broader VOID ecosystem and may become the presence of future Mind Mini. It is not the primary standalone interface.

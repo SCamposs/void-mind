@@ -119,7 +119,8 @@ The palette is overwhelmingly achromatic. Cold chroma appears in the ice-white i
 
 ### Hierarchy
 
-- **Title** (520, 1.45rem, 1.25): page identity in Models, Settings, and foundations.
+- **Display** (420, responsive 2–3.5rem): the Home and onboarding invitation.
+- **Title** (520, 1.45rem, 1.25): page identity in Intelligence, Settings, Workspaces, and Knowledge.
 - **Conversation title** (550, 0.88rem, 1.5): a restrained working-context label.
 - **Body** (400, 0.94rem, 1.72): Markdown and assistant responses, capped at 72 characters.
 - **UI text** (400 to 560, 0.72rem to 0.82rem): controls, navigation, and settings.
@@ -189,7 +190,8 @@ The exact parent VOID path is traced, filled with glacial white, and never geome
 - **Do** keep conversation prose proportional, comfortable, and no wider than 72 characters.
 - **Do** expose clear hover, focus, active, disabled, loading, error, and reduced-motion behavior.
 - **Do** let code blocks scroll internally and side navigation collapse before content becomes cramped.
-- **Do** keep provider and generation parameters in Models and Settings.
+- **Do** keep account, provider, model, and generation parameters in Intelligence and Settings.
+- **Do** show selected workspace and Knowledge context before it affects a conversation.
 
 ### Don't:
 

@@ -6,8 +6,8 @@
 - VOID Local llama-server provider: **Implemented**
 - External local-server mode: **Implemented**
 - Managed local runtime: **Implemented foundation**
-- Remote providers: **Future**
-- Codex provider: **Proposed**
+- OpenAI Codex provider: **Implemented, primary**
+- Additional remote providers: **Future**
 
 ## Contract
 
@@ -23,7 +23,15 @@ A provider supplies:
 
 Capabilities include streaming, cancellation, files, vision, tools, reasoning, local execution, and account authentication. UI surfaces ask the contract about capabilities instead of branching on llama.cpp implementation details.
 
-Generation emits `start`, `token`, `done`, or `error`. Cancellation uses `AbortSignal` at the caller boundary and a provider-owned active controller. This keeps stop behavior usable without exposing transport details to the conversation view.
+Generation emits `binding`, `start`, `token`, `done`, or `error`. Cancellation uses `AbortSignal` at the caller boundary and a provider-owned interrupt. This keeps stop behavior usable without exposing transport details to the conversation view.
+
+## OpenAI Codex
+
+The primary provider launches the installed `codex app-server --stdio`, performs the required initialize handshake, and centralizes JSONL request correlation and notification normalization in the Tauri layer. It supports runtime-owned ChatGPT login, logout and cancellation; live model discovery; persisted thread IDs; streamed assistant deltas; turn completion; and actual `turn/interrupt`.
+
+Every thread uses a neutral workspace below app data, `approvalPolicy: never`, a read-only sandbox, and general-purpose conversation instructions. Server-initiated approval or tool requests are rejected. Credentials are never requested, parsed, logged, or written by VOID Mind.
+
+The provider exposes errors as stable user-facing categories such as missing runtime, authentication required, network unavailable, usage limit, unavailable model, protocol mismatch, and generation failure. It does not silently route to llama.cpp.
 
 ## VOID Local
 
@@ -69,7 +77,7 @@ There is no shell permission, arbitrary executable mode, arbitrary argument inpu
 
 ## Adding a provider
 
-A future provider must:
+A provider must:
 
 1. implement `MindProvider`
 2. declare truthful capabilities
@@ -81,4 +89,4 @@ A future provider must:
 
 Remote providers must be opt-in and must never inherit the local privacy claim.
 
-The future Codex provider should use official Codex runtime or app-server mechanisms and official ChatGPT/Codex account authentication. Unofficial token extraction is outside the architecture.
+Unofficial token extraction is outside the architecture.
