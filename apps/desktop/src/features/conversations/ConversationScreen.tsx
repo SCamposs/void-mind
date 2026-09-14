@@ -309,6 +309,15 @@ export function ConversationScreen() {
           selectedModelId={selectedModel?.id ?? null}
           generating={generating}
           disabled={!selectedModel}
+          privacyMessage={
+            !selectedModel
+              ? "Choose an intelligence provider to begin."
+              : selectedModel.location === "remote"
+              ? (conversation?.contextKnowledgeIds?.length ?? 0) > 0
+                ? "Sent through Codex with the selected context."
+                : "Sent through the official Codex runtime."
+              : "Local model execution stays on this device."
+          }
           onModelChange={(id) => {
             const model = state.models.find((item) => item.id === id);
             if (!model) return;

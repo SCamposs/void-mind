@@ -1,11 +1,20 @@
 import { Check, Edit3, Pin, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { searchConversations } from "@void-mind/mind-core";
+import { searchConversations, type Conversation } from "@void-mind/mind-core";
 import { useMindStore } from "../../stores/mind-store";
+
+function groupLabel(conversation: Conversation, now = new Date()): string {
+  if (conversation.pinned) return "Pinned";
+  const updated = new Date(conversation.updatedAt);
+  if (updated.toDateString() === now.toDateString()) return "Today";
+  if (now.getTime() - updated.getTime() < 7 * 24 * 60 * 60 * 1000) return "Previous 7 days";
+  return "Older";
+}
 
 export function ConversationList() {
   const conversations = useMindStore((state) => state.conversations);
   const selectedId = useMindStore((state) => state.selectedConversationId);
+  const selectedWorkspaceId = useMindStore((state) => state.selectedWorkspaceId);
   const create = useMindStore((state) => state.createConversation);
   const select = useMindStore((state) => state.selectConversation);
   const rename = useMindStore((state) => state.renameConversation);
@@ -21,6 +30,15 @@ export function ConversationList() {
     ),
     [conversations, query]
   );
+  const groups = useMemo(() => {
+    const result = new Map<string, Conversation[]>();
+    for (const conversation of filtered) {
+      const label = groupLabel(conversation);
+      result.set(label, [...(result.get(label) ?? []), conversation]);
+    }
+    return [...result];
+  }, [filtered]);
+  const currentWorkspaceId = conversations.find((item) => item.id === selectedId)?.workspaceId;
 
   const beginRename = (id: string, title: string) => {
     setEditingId(id);
@@ -36,7 +54,7 @@ export function ConversationList() {
 
   return (
     <aside className="conversation-list" aria-label="Conversation history">
-      <button className="new-conversation" type="button" onClick={() => create()}>
+      <button className="new-conversation" type="button" onClick={() => create(currentWorkspaceId ?? selectedWorkspaceId ?? undefined)}>
         <Plus size={16} />
         New conversation
       </button>
@@ -54,11 +72,13 @@ export function ConversationList() {
         {filtered.length === 0 ? (
           <p className="list-empty">{query ? "No matching conversations." : "No conversations yet."}</p>
         ) : (
-          filtered.map((conversation) => (
-            <div
-              key={conversation.id}
-              className={`conversation-row ${selectedId === conversation.id ? "is-active" : ""}`}
-            >
+          groups.map(([label, items]) => (
+            <section className="conversation-group" key={label} aria-labelledby={`conversation-group-${label.replace(/\W+/g, "-").toLowerCase()}`}>
+              <h2 id={`conversation-group-${label.replace(/\W+/g, "-").toLowerCase()}`}>{label}</h2>
+              {items.map((conversation) => <div
+                key={conversation.id}
+                className={`conversation-row ${selectedId === conversation.id ? "is-active" : ""}`}
+              >
               {editingId === conversation.id ? (
                 <form
                   onSubmit={(event) => {
@@ -122,7 +142,8 @@ export function ConversationList() {
                   </div>
                 </>
               )}
-            </div>
+              </div>)}
+            </section>
           ))
         )}
       </div>

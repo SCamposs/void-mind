@@ -1,5 +1,6 @@
-import { ArrowRight, MessageSquareText, Plus, Shapes, Sparkles } from "lucide-react";
+import { ArrowRight, MessageSquareText, Plus, Shapes } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { SelectControl } from "../../components/SelectControl";
 import { useMindStore } from "../../stores/mind-store";
 
 export function HomeScreen() {
@@ -25,7 +26,7 @@ export function HomeScreen() {
   return (
     <section className="home-screen">
       <div className="home-hero">
-        <span className="quiet-label"><Sparkles size={13} /> Intelligence environment</span>
+        <span className="quiet-label">Intelligence environment</span>
         <h1>Make room for thought.</h1>
         <p>Start with a question. Shape the context with a workspace when the work needs continuity.</p>
         <form className="home-composer" onSubmit={submit}>
@@ -43,7 +44,19 @@ export function HomeScreen() {
             rows={3}
           />
           <div>
-            <span>{activeModel?.displayName ?? (connected ? "Choose a model" : "Connect ChatGPT to begin")}</span>
+            <div className="home-context">
+              <span>{activeModel?.displayName ?? (connected ? "Choose a model" : "Connect ChatGPT to begin")}</span>
+              <SelectControl
+                variant="compact"
+                label="Workspace for new conversation"
+                value={state.selectedWorkspaceId ?? ""}
+                options={[
+                  { value: "", label: "No workspace", detail: "Start without workspace context" },
+                  ...state.workspaces.map((workspace) => ({ value: workspace.id, label: workspace.name, detail: "Workspace" }))
+                ]}
+                onChange={(value) => state.selectWorkspace(value || null)}
+              />
+            </div>
             <button type="submit" disabled={!prompt.trim() || !activeModel} aria-label="Start conversation">
               <ArrowRight size={18} />
             </button>

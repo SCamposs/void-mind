@@ -133,4 +133,20 @@ describe("Codex provider", () => {
     emit({ type: "turnCompleted", threadId: "thread-1", turnId: "turn-1", status: "interrupted" });
     await iterator.next();
   });
+
+  it("ends an aborted stream as an abort instead of a completed response", async () => {
+    const { bridge } = createBridge();
+    const provider = new CodexProvider(bridge);
+    const controller = new AbortController();
+    const iterator = provider.generate(request, controller.signal);
+    await iterator.next();
+    await iterator.next();
+    const pending = iterator.next();
+    controller.abort(new DOMException("Stopped", "AbortError"));
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(bridge.interrupt).toHaveBeenCalledWith({
+      remoteThreadId: "thread-1",
+      turnId: "turn-1"
+    });
+  });
 });

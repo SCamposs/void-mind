@@ -1,6 +1,7 @@
 import { FileText, Plus, Trash2 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useState } from "react";
+import { SelectControl } from "../../components/SelectControl";
 import { deleteKnowledgeFile, importKnowledgeFile } from "../../lib/knowledge-bridge";
 import { useMindStore } from "../../stores/mind-store";
 
@@ -53,10 +54,18 @@ export function KnowledgeScreen() {
         <button className="primary-button" type="button" disabled={!workspace} onClick={() => void add()}><Plus size={15} /> Import source</button>
       </header>
       <div className="knowledge-toolbar">
-        <label className="field"><span>Workspace</span><select value={workspace?.id ?? ""} onChange={(event) => state.selectWorkspace(event.target.value || null)}>
-          <option value="">Choose a workspace</option>
-          {state.workspaces.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-        </select></label>
+        <div className="field">
+          <span>Workspace</span>
+          <SelectControl
+            label="Knowledge workspace"
+            value={workspace?.id ?? ""}
+            options={[
+              { value: "", label: "Choose a workspace", detail: "No workspace selected" },
+              ...state.workspaces.map((item) => ({ value: item.id, label: item.name, detail: "Workspace" }))
+            ]}
+            onChange={(value) => state.selectWorkspace(value || null)}
+          />
+        </div>
         <p>Only sources you select are included. Imported content is visible before use in a conversation.</p>
       </div>
       {message && <div className="status-message" role="status">{message}</div>}

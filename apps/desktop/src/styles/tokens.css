@@ -31,5 +31,6 @@
   --duration-normal: 220ms;
   --z-navigation: 20;
   --z-scrim: 15;
+  --z-dropdown: 35;
   --z-intro: 50;
 }

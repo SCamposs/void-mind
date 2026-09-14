@@ -190,7 +190,9 @@ export const useMindStore = create<MindStore>()((set) => ({
   },
   updateMessage: (id, content, status) =>
     set((state) => {
-      const conversation = selected(state);
+      const conversation = state.conversations.find((item) =>
+        item.messages.some((message) => message.id === id)
+      );
       return conversation
         ? replaceSelected(state, updateMessage(conversation, id, { content, status }))
         : {};

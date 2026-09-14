@@ -219,9 +219,15 @@ impl CodexClient {
             }
             return Err(error);
         }
-        receiver
-            .recv_timeout(REQUEST_TIMEOUT)
-            .map_err(|_| format!("Codex did not answer {method} in time."))?
+        match receiver.recv_timeout(REQUEST_TIMEOUT) {
+            Ok(response) => response,
+            Err(_) => {
+                if let Ok(mut pending) = self.pending.lock() {
+                    pending.remove(&id);
+                }
+                Err(format!("Codex did not answer {method} in time."))
+            }
+        }
     }
 
     fn notify(&self, method: &str) -> Result<(), String> {
@@ -266,11 +272,10 @@ impl CodexRuntimeManager {
     }
 
     fn status(&self) -> CodexRuntimeStatus {
-        let client = self
-            .inner
-            .lock()
-            .ok()
-            .and_then(|state| state.client.clone());
+        let Ok(mut state) = self.inner.lock() else {
+            return CodexRuntimeStatus::not_installed();
+        };
+        let client = state.client.clone();
         if let Some(client) = client {
             let exit = client
                 .child
@@ -279,11 +284,9 @@ impl CodexRuntimeManager {
                 .and_then(|mut child| child.try_wait().ok().flatten());
             if let Some(exit) = exit {
                 client.alive.store(false, Ordering::Release);
-                if let Ok(mut state) = self.inner.lock() {
-                    state.client = None;
-                    state.last_exit_code = exit.code();
-                    state.last_error = Some("The Codex runtime exited.".into());
-                }
+                state.client = None;
+                state.last_exit_code = exit.code();
+                state.last_error = Some("The Codex runtime exited.".into());
             } else if client.alive.load(Ordering::Acquire) {
                 return CodexRuntimeStatus::running(&client);
             }
@@ -292,12 +295,10 @@ impl CodexRuntimeManager {
         match locate_codex() {
             Some(path) => {
                 let mut status = CodexRuntimeStatus::ready(&path, codex_version(&path));
-                if let Ok(state) = self.inner.lock() {
-                    status.exit_code = state.last_exit_code;
-                    status.error = state.last_error.clone();
-                    if status.error.is_some() {
-                        status.state = "error";
-                    }
+                status.exit_code = state.last_exit_code;
+                status.error = state.last_error.clone();
+                if status.error.is_some() {
+                    status.state = "error";
                 }
                 status
             }
@@ -306,13 +307,11 @@ impl CodexRuntimeManager {
     }
 
     fn start(&self, app: &AppHandle) -> Result<CodexRuntimeStatus, String> {
-        if let Some(client) = self
+        let mut manager = self
             .inner
             .lock()
-            .map_err(|_| "Codex runtime state is unavailable.".to_string())?
-            .client
-            .clone()
-        {
+            .map_err(|_| "Codex runtime state is unavailable.".to_string())?;
+        if let Some(client) = manager.client.clone() {
             if client.alive.load(Ordering::Acquire)
                 && client
                     .child
@@ -324,6 +323,8 @@ impl CodexRuntimeManager {
             {
                 return Ok(CodexRuntimeStatus::running(&client));
             }
+            client.shutdown();
+            manager.client = None;
         }
 
         let executable = locate_codex().ok_or_else(|| {
@@ -405,12 +406,13 @@ impl CodexRuntimeManager {
             client.shutdown();
             return Err(format!("Codex protocol initialization failed: {error}"));
         }
-        client.notify("initialized")?;
-        if let Ok(mut state) = self.inner.lock() {
-            state.client = Some(Arc::clone(&client));
-            state.last_exit_code = None;
-            state.last_error = None;
+        if let Err(error) = client.notify("initialized") {
+            client.shutdown();
+            return Err(format!("Codex protocol initialization failed: {error}"));
         }
+        manager.client = Some(Arc::clone(&client));
+        manager.last_exit_code = None;
+        manager.last_error = None;
         Ok(CodexRuntimeStatus::running(&client))
     }
 

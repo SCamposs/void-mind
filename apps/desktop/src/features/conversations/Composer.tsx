@@ -1,12 +1,14 @@
 import { ArrowUp, Square } from "lucide-react";
 import { useRef, useState } from "react";
 import type { ModelDescriptor } from "@void-mind/mind-core";
+import { SelectControl } from "../../components/SelectControl";
 
 type ComposerProps = {
   models: ModelDescriptor[];
   selectedModelId: string | null;
   generating: boolean;
   disabled: boolean;
+  privacyMessage: string;
   onModelChange(id: string): void;
   onSend(content: string): void;
   onStop(): void;
@@ -17,6 +19,7 @@ export function Composer({
   selectedModelId,
   generating,
   disabled,
+  privacyMessage,
   onModelChange,
   onSend,
   onStop
@@ -41,7 +44,7 @@ export function Composer({
             value={draft}
             disabled={disabled}
             rows={1}
-            placeholder={disabled ? "Configure a local model to begin" : "Write a message"}
+            placeholder={disabled ? "Configure Intelligence to begin" : "Write a message"}
             onChange={(event) => {
               setDraft(event.target.value);
               event.currentTarget.style.height = "auto";
@@ -56,19 +59,21 @@ export function Composer({
           />
         </label>
         <div className="composer-footer">
-          <label className="model-select">
-            <span className="sr-only">Active model</span>
-            <select
+          <div className="model-select">
+            <SelectControl
+              variant="compact"
+              label="Active model"
               value={selectedModelId ?? ""}
               disabled={!models.length || generating}
-              onChange={(event) => onModelChange(event.target.value)}
-            >
-              {!models.length && <option value="">No model active</option>}
-              {models.map((model) => (
-                <option key={model.id} value={model.id}>{model.displayName}</option>
-              ))}
-            </select>
-          </label>
+              placeholder="No model active"
+              options={models.map((model) => ({
+                value: model.id,
+                label: model.displayName,
+                detail: model.location === "remote" ? "OpenAI Codex" : "Local runtime"
+              }))}
+              onChange={onModelChange}
+            />
+          </div>
           {generating ? (
             <button className="send-button stop-button" type="button" onClick={onStop}>
               <Square size={13} fill="currentColor" />
@@ -87,7 +92,7 @@ export function Composer({
           )}
         </div>
       </div>
-      <p>Enter to send, Shift + Enter for a new line. Responses stay on this device.</p>
+      <p>Enter to send, Shift + Enter for a new line. {privacyMessage}</p>
     </div>
   );
 }

@@ -297,6 +297,16 @@ summary {
   overflow-y: auto;
 }
 
+.conversation-group > h2 {
+  margin: 12px 10px 5px;
+  color: var(--mind-faint);
+  font-family: var(--font-mono);
+  font-size: 0.57rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
 .conversation-row {
   position: relative;
   display: flex;
@@ -780,13 +790,8 @@ summary {
   padding: 7px 8px 8px 12px;
 }
 
-.model-select select {
+.model-select {
   max-width: 260px;
-  border: 0;
-  padding: 5px 22px 5px 0;
-  background: var(--mind-black-soft);
-  color: var(--mind-muted);
-  font-size: 0.7rem;
 }
 
 .send-button {
@@ -982,7 +987,6 @@ summary {
 
 .field input,
 .field textarea,
-.field select,
 .path-field {
   border: 1px solid var(--mind-border);
   border-radius: var(--radius-sm);
@@ -991,8 +995,7 @@ summary {
 }
 
 .field input,
-.field textarea,
-.field select {
+.field textarea {
   width: 100%;
   padding: 9px 10px;
 }
@@ -1004,7 +1007,6 @@ summary {
 
 .field input:focus,
 .field textarea:focus,
-.field select:focus,
 .path-field:focus-within {
   border-color: var(--mind-ice);
 }
@@ -1266,7 +1268,7 @@ summary {
   color: var(--mind-ice);
   font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 420;
-  letter-spacing: -0.052em;
+  letter-spacing: -0.04em;
   line-height: 1.04;
 }
 
@@ -1281,13 +1283,13 @@ summary {
   border: 1px solid var(--mind-border-strong);
   border-radius: var(--radius-md);
   background: color-mix(in oklch, var(--mind-black-soft) 90%, transparent);
-  box-shadow: 0 22px 80px color-mix(in oklch, var(--mind-ice) 4%, transparent);
+  box-shadow: 0 6px 8px oklch(0% 0 0 / 0.42);
   transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
 }
 
 .home-composer:focus-within {
   border-color: color-mix(in oklch, var(--mind-ice) 65%, var(--mind-border));
-  box-shadow: 0 22px 90px color-mix(in oklch, var(--mind-ice) 7%, transparent);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--mind-ice) 9%, transparent);
 }
 
 .home-composer textarea {
@@ -1311,7 +1313,145 @@ summary {
   font-size: 0.68rem;
 }
 
-.home-composer button {
+.home-context {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-context > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-context .select-control {
+  max-width: 190px;
+  border-left: 1px solid var(--mind-border);
+}
+
+.select-control {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--mind-border);
+  border-radius: var(--radius-sm);
+  background: var(--mind-black-soft);
+  color: var(--mind-text);
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.select-control.is-field {
+  min-height: 39px;
+  padding: 8px 10px;
+  font-size: 0.75rem;
+}
+
+.select-control.is-compact {
+  width: auto;
+  min-height: 30px;
+  padding: 5px 8px 5px 10px;
+  color: var(--mind-muted);
+  font-size: 0.68rem;
+}
+
+.select-control > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-control .is-placeholder {
+  color: var(--mind-faint);
+}
+
+.select-control:hover:not(:disabled),
+.select-control[aria-expanded="true"] {
+  border-color: var(--mind-border-strong);
+  background: color-mix(in oklch, var(--mind-black-soft) 88%, var(--mind-ice));
+}
+
+.select-control:focus-visible {
+  border-color: var(--mind-ice);
+  outline-width: 1px;
+  outline-offset: 2px;
+}
+
+.select-control svg {
+  flex: 0 0 auto;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.select-control[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.select-popover-layer {
+  position: fixed;
+  z-index: var(--z-dropdown);
+  inset: 0;
+}
+
+.select-popover {
+  position: fixed;
+  display: grid;
+  max-height: min(288px, calc(100vh - 16px));
+  overflow-y: auto;
+  gap: 2px;
+  border: 1px solid var(--mind-border-strong);
+  border-radius: var(--radius-md);
+  padding: 5px;
+  background: var(--mind-surface-raised);
+  box-shadow: 0 6px 8px oklch(0% 0 0 / 0.48);
+}
+
+.select-popover > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-radius: var(--radius-sm);
+  padding: 8px 9px;
+  color: var(--mind-muted);
+  text-align: left;
+}
+
+.select-popover > button:hover:not(:disabled),
+.select-popover > button.is-active {
+  background: color-mix(in oklch, var(--mind-ice) 8%, var(--mind-surface-raised));
+  color: var(--mind-text);
+}
+
+.select-popover > button[aria-selected="true"] {
+  color: var(--mind-ice);
+}
+
+.select-popover > button > span {
+  display: grid;
+  min-width: 0;
+}
+
+.select-popover strong {
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-popover small {
+  color: var(--mind-faint);
+  font-size: 0.62rem;
+  font-weight: 400;
+}
+
+.home-composer > div > button {
   display: grid;
   width: 34px;
   height: 34px;
@@ -1407,7 +1547,7 @@ summary {
 .context-button { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; border: 1px solid var(--mind-border); border-radius: var(--radius-sm); padding: 7px 9px; color: var(--mind-muted); font-size: 0.68rem; }
 .context-button:hover { border-color: var(--mind-border-strong); color: var(--mind-ice); }
 .context-button span { display: grid; min-width: 16px; height: 16px; place-items: center; border-radius: 50%; background: var(--mind-ice); color: var(--mind-black); font-size: 0.58rem; }
-.context-panel { position: absolute; z-index: 8; top: 58px; right: 18px; width: min(360px, calc(100% - 36px)); border: 1px solid var(--mind-border-strong); border-radius: var(--radius-md); padding: 16px; background: color-mix(in oklch, var(--mind-black-soft) 96%, transparent); box-shadow: 0 24px 80px oklch(0% 0 0 / 0.7); }
+.context-panel { position: absolute; z-index: 8; top: 58px; right: 18px; width: min(360px, calc(100% - 36px)); border: 1px solid var(--mind-border-strong); border-radius: var(--radius-md); padding: 16px; background: color-mix(in oklch, var(--mind-black-soft) 96%, transparent); box-shadow: 0 6px 8px oklch(0% 0 0 / 0.62); }
 .context-panel header { display: flex; align-items: start; justify-content: space-between; }
 .context-panel header strong, .context-panel header span { display: block; }
 .context-panel header strong { color: var(--mind-text); font-size: 0.78rem; }
@@ -1435,7 +1575,7 @@ summary {
   text-align: center;
 }
 .onboarding-mark { width: 38px; margin-bottom: 18px; color: var(--mind-ice); filter: drop-shadow(0 0 16px color-mix(in oklch, var(--mind-ice) 24%, transparent)); }
-.onboarding-screen h1 { max-width: 650px; margin: 12px 0; color: var(--mind-ice); font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 420; letter-spacing: -0.05em; }
+.onboarding-screen h1 { max-width: 650px; margin: 12px 0; color: var(--mind-ice); font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 420; letter-spacing: -0.04em; }
 .onboarding-screen > p { max-width: 620px; margin: 0; color: var(--mind-muted); }
 .onboarding-points { display: grid; gap: 8px; margin: 28px 0; color: var(--mind-text); font-size: 0.75rem; text-align: left; }
 .onboarding-points span { display: flex; align-items: center; gap: 8px; }
@@ -1531,7 +1671,8 @@ summary {
 }
 
 .boot-logo-path {
-  fill: transparent;
+  fill: var(--mind-ice);
+  fill-opacity: 0;
   stroke: var(--mind-ice);
   stroke-width: 1.15;
   stroke-linejoin: round;
@@ -1593,7 +1734,7 @@ summary {
 
 @keyframes logo-fill {
   to {
-    fill: var(--mind-ice);
+    fill-opacity: 1;
     stroke-width: 0;
     filter: drop-shadow(0 0 8px color-mix(in oklch, var(--mind-ice) 36%, transparent));
   }
@@ -1778,6 +1919,7 @@ summary {
 
   .boot-logo-path {
     fill: var(--mind-ice);
+    fill-opacity: 1;
     stroke-dashoffset: 0;
   }
 

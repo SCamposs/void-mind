@@ -154,11 +154,33 @@ class EventQueue {
     else this.values.push(value);
   }
 
-  next(): Promise<CodexRuntimeEvent> {
+  next(signal?: AbortSignal): Promise<CodexRuntimeEvent> {
+    if (signal?.aborted) return Promise.reject(abortReason(signal));
     const value = this.values.shift();
     if (value) return Promise.resolve(value);
-    return new Promise((resolve) => this.listeners.push(resolve));
+    return new Promise((resolve, reject) => {
+      const onValue = (event: CodexRuntimeEvent) => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve(event);
+      };
+      const onAbort = () => {
+        const index = this.listeners.indexOf(onValue);
+        if (index >= 0) this.listeners.splice(index, 1);
+        reject(abortReason(signal));
+      };
+      this.listeners.push(onValue);
+      signal?.addEventListener("abort", onAbort, { once: true });
+      if (signal?.aborted) onAbort();
+    });
   }
+}
+
+function abortReason(signal?: AbortSignal): unknown {
+  return signal?.reason ?? new DOMException("Generation stopped.", "AbortError");
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw abortReason(signal);
 }
 
 export class CodexProvider implements MindProvider {
@@ -194,7 +216,7 @@ export class CodexProvider implements MindProvider {
   }
 
   cancel(): void {
-    if (this.activeTurn) void this.bridge.interrupt(this.activeTurn);
+    if (this.activeTurn) void this.bridge.interrupt(this.activeTurn).catch(() => undefined);
   }
 
   async *generate(
@@ -206,6 +228,7 @@ export class CodexProvider implements MindProvider {
     let abort: (() => void) | undefined;
 
     try {
+      throwIfAborted(signal);
       const binding = request.remoteThreadId
         ? await this.bridge.resumeThread({
             remoteThreadId: request.remoteThreadId,
@@ -216,6 +239,7 @@ export class CodexProvider implements MindProvider {
             model: request.model.identifier,
             contextInstructions: request.contextInstructions
           });
+      throwIfAborted(signal);
       if (!request.remoteThreadId) {
         yield { type: "binding", remoteThreadId: binding.remoteThreadId };
       }
@@ -228,13 +252,14 @@ export class CodexProvider implements MindProvider {
         reasoningEffort: request.reasoningEffort,
         serviceTier: request.serviceTier
       });
+      throwIfAborted(signal);
       this.activeTurn = { remoteThreadId: binding.remoteThreadId, turnId: turn.turnId };
       abort = () => this.cancel();
       signal?.addEventListener("abort", abort, { once: true });
       yield { type: "start", turnId: turn.turnId };
 
       while (true) {
-        const event = await queue.next();
+        const event = await queue.next(signal);
         if (
           "threadId" in event &&
           event.threadId &&

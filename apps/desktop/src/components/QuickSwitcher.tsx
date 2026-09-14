@@ -15,6 +15,9 @@ export function QuickSwitcher() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
+  const dialog = useRef<HTMLElement>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+  const wasOpen = useRef(false);
   const conversations = useMindStore((state) => state.conversations);
   const createConversation = useMindStore((state) => state.createConversation);
   const selectConversation = useMindStore((state) => state.selectConversation);
@@ -42,9 +45,39 @@ export function QuickSwitcher() {
   }, [createConversation, setSection]);
 
   useEffect(() => {
-    if (open) window.setTimeout(() => input.current?.focus(), 0);
-    else setQuery("");
+    const shell = document.querySelector<HTMLElement>(".app-shell");
+    const background = shell
+      ? [...shell.children].filter((element) => !element.classList.contains("switcher-backdrop")) as HTMLElement[]
+      : [];
+    if (open) {
+      previousFocus.current = document.activeElement as HTMLElement | null;
+      background.forEach((element) => { element.inert = true; });
+      window.setTimeout(() => input.current?.focus(), 0);
+    } else {
+      setQuery("");
+      background.forEach((element) => { element.inert = false; });
+      if (wasOpen.current) previousFocus.current?.focus();
+    }
+    wasOpen.current = open;
+    return () => background.forEach((element) => { element.inert = false; });
   }, [open]);
+
+  const trapFocus = (event: React.KeyboardEvent) => {
+    if (event.key !== "Tab") return;
+    const focusable = dialog.current?.querySelectorAll<HTMLElement>(
+      "button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])"
+    );
+    if (!focusable?.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   const normalized = query.trim().toLocaleLowerCase();
   const matchingDestinations = destinations.filter((item) => item.label.toLocaleLowerCase().includes(normalized));
@@ -56,7 +89,7 @@ export function QuickSwitcher() {
   if (!open) return null;
   return (
     <div className="switcher-backdrop" role="presentation" onMouseDown={() => setOpen(false)}>
-      <section className="quick-switcher" role="dialog" aria-modal="true" aria-label="Quick switcher" onMouseDown={(event) => event.stopPropagation()}>
+      <section ref={dialog} className="quick-switcher" role="dialog" aria-modal="true" aria-label="Quick switcher" onKeyDown={trapFocus} onMouseDown={(event) => event.stopPropagation()}>
         <label><Search size={16} /><input ref={input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Go to…" /><button type="button" onClick={() => setOpen(false)} aria-label="Close"><X size={15} /></button></label>
         <div className="switcher-results">
           <span>Navigate</span>

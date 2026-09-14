@@ -2,6 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useMindStore } from "../../stores/mind-store";
 import { deleteKnowledgeFile } from "../../lib/knowledge-bridge";
+import { SelectControl } from "../../components/SelectControl";
 
 export function WorkspacesScreen() {
   const state = useMindStore();
@@ -9,6 +10,7 @@ export function WorkspacesScreen() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [preferenceModelId, setPreferenceModelId] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
 
@@ -16,6 +18,7 @@ export function WorkspacesScreen() {
     setName(workspace?.name ?? "");
     setDescription(workspace?.description ?? "");
     setInstructions(workspace?.instructions ?? "");
+    setPreferenceModelId(workspace?.preference?.modelId ?? "");
     setConfirmDelete(false);
     setError("");
   }, [workspace]);
@@ -27,7 +30,18 @@ export function WorkspacesScreen() {
 
   const save = () => {
     if (!workspace || !name.trim()) return;
-    state.updateWorkspace(workspace.id, { name, description, instructions });
+    const model = state.models.find((item) => item.id === preferenceModelId);
+    state.updateWorkspace(workspace.id, {
+      name,
+      description,
+      instructions,
+      preference: model ? {
+        providerId: model.providerId,
+        modelId: model.id,
+        reasoningEffort: model.defaultReasoningEffort,
+        serviceTier: model.defaultServiceTier
+      } : undefined
+    });
   };
 
   const remove = async () => {
@@ -62,27 +76,23 @@ export function WorkspacesScreen() {
             <label className="field"><span>Name</span><input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
             <label className="field"><span>Description</span><textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What belongs here?" /></label>
             <label className="field"><span>Instructions</span><textarea rows={8} value={instructions} onChange={(event) => setInstructions(event.target.value)} placeholder="Guidance applied to conversations in this workspace." /></label>
-            <label className="field">
+            <div className="field">
               <span>Preferred intelligence</span>
-              <select
-                value={workspace.preference?.modelId ?? ""}
-                onChange={(event) => {
-                  const model = state.models.find((item) => item.id === event.target.value);
-                  state.updateWorkspace(workspace.id, {
-                    preference: model ? {
-                      providerId: model.providerId,
-                      modelId: model.id,
-                      reasoningEffort: model.defaultReasoningEffort,
-                      serviceTier: model.defaultServiceTier
-                    } : undefined
-                  });
-                }}
-              >
-                <option value="">Use global default</option>
-                {state.models.map((model) => <option key={model.id} value={model.id}>{model.displayName} · {model.providerId === "openai-codex" ? "Codex" : "local"}</option>)}
-              </select>
+              <SelectControl
+                label="Preferred intelligence"
+                value={preferenceModelId}
+                options={[
+                  { value: "", label: "Use global default", detail: "Follow the app preference" },
+                  ...state.models.map((model) => ({
+                    value: model.id,
+                    label: model.displayName,
+                    detail: model.providerId === "openai-codex" ? "OpenAI Codex" : "Local runtime"
+                  }))
+                ]}
+                onChange={setPreferenceModelId}
+              />
               <small>Conversations inherit this unless you explicitly choose another model.</small>
-            </label>
+            </div>
             <div className="button-row">
               <button className="primary-button" type="button" onClick={save}>Save changes</button>
               {confirmDelete ? (
