@@ -1535,7 +1535,9 @@ summary {
 .knowledge-list article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; border-top: 1px solid color-mix(in oklch, var(--mind-border) 65%, transparent); padding: 19px 4px; color: var(--mind-muted); }
 .knowledge-list h2 { margin: 0; color: var(--mind-text); font-size: 0.8rem; font-weight: 550; }
 .knowledge-list p { margin: 3px 0 10px; color: var(--mind-faint); font-size: 0.66rem; }
-.knowledge-list pre { max-height: 88px; overflow: hidden; margin: 0; color: var(--mind-muted); font-family: var(--font-body); font-size: 0.7rem; white-space: pre-wrap; }
+.knowledge-preview summary { width: fit-content; cursor: pointer; color: var(--mind-muted); font-size: 0.68rem; list-style-position: inside; }
+.knowledge-preview summary:hover { color: var(--mind-ice); }
+.knowledge-preview pre { max-height: 320px; overflow: auto; margin: 10px 0 0; border-left: 1px solid var(--mind-border); padding: 0 12px; color: var(--mind-muted); font-family: var(--font-body); font-size: 0.7rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
 .knowledge-list article > button { align-self: start; padding: 6px; color: var(--mind-faint); }
 .knowledge-list article > button:hover { color: var(--mind-error); }
 

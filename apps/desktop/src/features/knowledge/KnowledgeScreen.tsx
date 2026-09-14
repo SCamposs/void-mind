@@ -7,14 +7,14 @@ import { useMindStore } from "../../stores/mind-store";
 
 export function KnowledgeScreen() {
   const state = useMindStore();
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const workspace = state.workspaces.find((item) => item.id === state.selectedWorkspaceId);
   const items = workspace ? state.knowledge.filter((item) => item.workspaceId === workspace.id) : [];
 
   const add = async () => {
     if (!workspace) return;
-    setMessage("");
+    setMessage(null);
     try {
       const selected = await open({ multiple: false, directory: false, filters: [{ name: "Text knowledge", extensions: ["md", "txt"] }] });
       if (typeof selected !== "string") return;
@@ -32,9 +32,9 @@ export function KnowledgeScreen() {
         content: imported.content,
         status: "ready"
       });
-      setMessage("Source imported as an app-managed copy. The original file was not changed.");
+      setMessage({ kind: "success", text: "Source imported as an app-managed copy. The original file was not changed." });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
+      setMessage({ kind: "error", text: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -42,8 +42,10 @@ export function KnowledgeScreen() {
     try {
       await deleteKnowledgeFile(id);
       state.deleteKnowledge(id);
+      setDeletingId(null);
+      setMessage({ kind: "success", text: "The app-managed source copy was removed." });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
+      setMessage({ kind: "error", text: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -68,12 +70,23 @@ export function KnowledgeScreen() {
         </div>
         <p>Only sources you select are included. Imported content is visible before use in a conversation.</p>
       </div>
-      {message && <div className="status-message" role="status">{message}</div>}
+      {message && (
+        <div className={`status-message is-${message.kind}`} role={message.kind === "error" ? "alert" : "status"}>
+          {message.text}
+        </div>
+      )}
       <div className="knowledge-list">
         {items.map((item) => (
           <article key={item.id}>
             <FileText size={18} />
-            <div><h2>{item.title}</h2><p>{item.sourceFilename} · {(item.size / 1024).toFixed(1)} KB</p><pre>{item.content.slice(0, 280)}{item.content.length > 280 ? "…" : ""}</pre></div>
+            <div>
+              <h2>{item.title}</h2>
+              <p>{item.sourceFilename} · {(item.size / 1024).toFixed(1)} KB</p>
+              <details className="knowledge-preview">
+                <summary>View full source</summary>
+                <pre>{item.content}</pre>
+              </details>
+            </div>
             {deletingId === item.id ? (
               <div className="knowledge-confirm"><span>Remove?</span><button type="button" onClick={() => void remove(item.id)}>Yes</button><button type="button" onClick={() => setDeletingId(null)}>No</button></div>
             ) : <button type="button" onClick={() => setDeletingId(item.id)} aria-label={`Remove ${item.title}`}><Trash2 size={15} /></button>}
