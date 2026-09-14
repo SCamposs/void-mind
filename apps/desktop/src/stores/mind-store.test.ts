@@ -1,4 +1,10 @@
-import { appendMessage, createConversation, type ModelDescriptor } from "@void-mind/mind-core";
+import {
+  appendMessage,
+  createConversation,
+  createWorkspace,
+  type KnowledgeItem,
+  type ModelDescriptor
+} from "@void-mind/mind-core";
 import { DEFAULT_MIND_STATE } from "@void-mind/persistence";
 import { beforeEach, describe, expect, it } from "vitest";
 import { useMindStore } from "./mind-store";
@@ -67,5 +73,45 @@ describe("mind store streaming updates", () => {
     expect(state.selectedModelId).toBeNull();
     expect(state.selectedProviderId).toBe("openai-codex");
     expect(state.defaultPreference).toEqual({ providerId: "openai-codex", modelId: codex.id });
+  });
+
+  it("preserves conversations without orphaned knowledge references when deleting a workspace", () => {
+    const workspace = createWorkspace("Research");
+    const conversation = {
+      ...createConversation("Notes"),
+      workspaceId: workspace.id,
+      contextKnowledgeIds: ["knowledge-1"]
+    };
+    const knowledge: KnowledgeItem = {
+      id: "knowledge-1",
+      title: "Source",
+      sourceFilename: "source.md",
+      type: "markdown",
+      workspaceId: workspace.id,
+      addedAt: new Date().toISOString(),
+      size: 12,
+      managedPath: "managed/source.md",
+      content: "Explicit context.",
+      status: "ready"
+    };
+    useMindStore.setState({
+      workspaces: [workspace],
+      selectedWorkspaceId: workspace.id,
+      conversations: [conversation],
+      selectedConversationId: conversation.id,
+      knowledge: [knowledge]
+    });
+
+    useMindStore.getState().deleteWorkspace(workspace.id);
+
+    const state = useMindStore.getState();
+    expect(state.workspaces).toEqual([]);
+    expect(state.knowledge).toEqual([]);
+    expect(state.conversations).toHaveLength(1);
+    expect(state.conversations[0]).toMatchObject({
+      id: conversation.id,
+      contextKnowledgeIds: []
+    });
+    expect(state.conversations[0].workspaceId).toBeUndefined();
   });
 });

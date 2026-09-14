@@ -20,6 +20,7 @@ export function QuickSwitcher() {
   const wasOpen = useRef(false);
   const conversations = useMindStore((state) => state.conversations);
   const createConversation = useMindStore((state) => state.createConversation);
+  const selectedWorkspaceId = useMindStore((state) => state.selectedWorkspaceId);
   const selectConversation = useMindStore((state) => state.selectConversation);
   const setSection = useMindStore((state) => state.setSection);
 
@@ -34,7 +35,7 @@ export function QuickSwitcher() {
         setOpen((value) => !value);
       } else if (event.key.toLowerCase() === "n") {
         event.preventDefault();
-        createConversation();
+        createConversation(selectedWorkspaceId ?? undefined);
       } else if (event.key === ",") {
         event.preventDefault();
         setSection("settings");
@@ -42,7 +43,7 @@ export function QuickSwitcher() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [createConversation, setSection]);
+  }, [createConversation, selectedWorkspaceId, setSection]);
 
   useEffect(() => {
     const shell = document.querySelector<HTMLElement>(".app-shell");

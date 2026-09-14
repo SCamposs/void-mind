@@ -258,8 +258,17 @@ export const useMindStore = create<MindStore>()((set) => ({
   deleteWorkspace: (id) =>
     set((state) => {
       const next = deleteWorkspaceRecord(state.workspaces, state.conversations, id);
+      const removedKnowledgeIds = new Set(
+        state.knowledge.filter((item) => item.workspaceId === id).map((item) => item.id)
+      );
       return {
         ...next,
+        conversations: next.conversations.map((conversation) => ({
+          ...conversation,
+          contextKnowledgeIds: conversation.contextKnowledgeIds?.filter(
+            (knowledgeId) => !removedKnowledgeIds.has(knowledgeId)
+          )
+        })),
         knowledge: state.knowledge.filter((item) => item.workspaceId !== id),
         selectedWorkspaceId:
           state.selectedWorkspaceId === id ? next.workspaces[0]?.id ?? null : state.selectedWorkspaceId
