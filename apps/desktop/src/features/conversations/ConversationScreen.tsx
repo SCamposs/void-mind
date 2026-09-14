@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveProviderPreference } from "@void-mind/mind-core";
 import { CodexProvider, LlamaServerProvider, type MindProvider } from "@void-mind/providers";
 import { codexBridge } from "../../lib/codex-bridge";
+import { availableProviderIds } from "../../lib/provider-availability";
 import { useMindStore, activeSettings } from "../../stores/mind-store";
 import { useMediaQuery } from "../../lib/use-media-query";
 import { Composer } from "./Composer";
@@ -31,7 +32,7 @@ export function ConversationScreen() {
     conversation,
     workspace,
     global: state.defaultPreference,
-    availableProviderIds: [...new Set(state.models.map((model) => model.providerId))],
+    availableProviderIds: availableProviderIds(state),
     availableModelIds: state.models.map((model) => model.id)
   });
   const selectedModel = state.models.find(
@@ -78,7 +79,7 @@ export function ConversationScreen() {
       conversation: current,
       workspace: currentWorkspace,
       global: snapshot.defaultPreference,
-      availableProviderIds: [...new Set(snapshot.models.map((item) => item.providerId))],
+      availableProviderIds: availableProviderIds(snapshot),
       availableModelIds: snapshot.models.map((item) => item.id)
     });
     const model = snapshot.models.find((item) =>

@@ -230,7 +230,7 @@ export const useMindStore = create<MindStore>()((set) => ({
       ];
       const selectedModelId = models.some((model) => model.id === state.selectedModelId)
         ? state.selectedModelId
-        : providerModels.find((model) => model.isDefault)?.id ?? models[0]?.id ?? null;
+        : providerModels.find((model) => model.isDefault)?.id ?? providerModels[0]?.id ?? null;
       return { models, selectedModelId };
     }),
   setDefaultPreference: (defaultPreference) =>

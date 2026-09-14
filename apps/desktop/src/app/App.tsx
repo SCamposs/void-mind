@@ -54,14 +54,20 @@ export function App() {
               serviceTier: preferred.defaultServiceTier
             });
           }
+        } else {
+          useMindStore.getState().setProviderModels("openai-codex", []);
         }
       } catch (error) {
-        if (active) useMindStore.getState().setCodexStatus({
-          installed: false,
-          running: false,
-          state: "error",
-          error: error instanceof Error ? error.message : String(error)
-        });
+        if (active) {
+          const current = useMindStore.getState();
+          const previous = current.codexStatus;
+          current.setProviderModels("openai-codex", []);
+          current.setCodexStatus({
+            ...(previous ?? { installed: false, running: false }),
+            state: "error",
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
       }
     };
     void refresh();

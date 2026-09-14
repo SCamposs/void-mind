@@ -1,6 +1,8 @@
 import { ArrowRight, MessageSquareText, Plus, Shapes } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { resolveProviderPreference } from "@void-mind/mind-core";
 import { SelectControl } from "../../components/SelectControl";
+import { availableProviderIds } from "../../lib/provider-availability";
 import { useMindStore } from "../../stores/mind-store";
 
 export function HomeScreen() {
@@ -21,7 +23,28 @@ export function HomeScreen() {
   };
 
   const connected = state.codexAccount?.state === "connected";
-  const activeModel = state.models.find((model) => model.id === state.selectedModelId);
+  const workspace = state.workspaces.find((item) => item.id === state.selectedWorkspaceId);
+  const resolution = resolveProviderPreference({
+    workspace,
+    global: state.defaultPreference,
+    availableProviderIds: availableProviderIds(state),
+    availableModelIds: state.models.map((model) => model.id)
+  });
+  const activeModel = resolution.available && resolution.modelAvailable
+    ? state.models.find((model) =>
+        model.providerId === resolution.preference.providerId &&
+        model.id === (resolution.preference.modelId ?? state.selectedModelId)
+      ) ?? state.models.find((model) =>
+        model.providerId === resolution.preference.providerId && model.isDefault
+      )
+    : undefined;
+  const intelligenceLabel = activeModel
+    ? `${activeModel.displayName} · ${resolution.source}`
+    : resolution.source === "workspace" && workspace?.preference
+      ? "Workspace intelligence unavailable"
+      : connected
+        ? "Choose an available model"
+        : "Connect ChatGPT to begin";
 
   return (
     <section className="home-screen">
@@ -45,7 +68,7 @@ export function HomeScreen() {
           />
           <div>
             <div className="home-context">
-              <span>{activeModel?.displayName ?? (connected ? "Choose a model" : "Connect ChatGPT to begin")}</span>
+              <span>{intelligenceLabel}</span>
               <SelectControl
                 variant="compact"
                 label="Workspace for new conversation"

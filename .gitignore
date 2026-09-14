@@ -15,13 +15,13 @@ apps/desktop/src-tauri/target/
 .DS_Store
 
 # Local, generated, or potentially private model-lab data
-models/
-checkpoints/
-adapters/
-outputs/
-cache/
-private/
-data/private/
+/models/
+/checkpoints/
+/adapters/
+/outputs/
+/cache/
+/private/
+/data/private/
 *.gguf
 *.safetensors
 *.bin

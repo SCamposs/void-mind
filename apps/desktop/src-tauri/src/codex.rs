@@ -417,7 +417,8 @@ impl CodexRuntimeManager {
     }
 
     fn client(&self, app: &AppHandle) -> Result<Arc<CodexClient>, String> {
-        self.start(app)?;
+        self.start(app)
+            .map_err(|error| user_error_message(&error))?;
         self.inner
             .lock()
             .map_err(|_| "Codex runtime state is unavailable.".to_string())?
@@ -459,7 +460,7 @@ fn spawn_reader(
             }
             if let Some(id) = message.get("id").and_then(Value::as_u64) {
                 let response = if let Some(error) = message.get("error") {
-                    Err(protocol_error(error))
+                    Err(user_error_message(&protocol_error(error)))
                 } else {
                     Ok(message.get("result").cloned().unwrap_or(Value::Null))
                 };
@@ -509,12 +510,18 @@ fn normalize_notification(message: &Value) -> Option<Value> {
     let method = message.get("method")?.as_str()?;
     let params = message.get("params").cloned().unwrap_or(Value::Null);
     match method {
-        "account/login/completed" => Some(json!({
-            "type": "loginCompleted",
-            "loginId": params.get("loginId").cloned().unwrap_or(Value::Null),
-            "success": params.get("success").and_then(Value::as_bool).unwrap_or(false),
-            "error": params.get("error").cloned().unwrap_or(Value::Null)
-        })),
+        "account/login/completed" => {
+            let error = params
+                .get("error")
+                .and_then(error_detail)
+                .map(user_error_message);
+            Some(json!({
+                "type": "loginCompleted",
+                "loginId": params.get("loginId").cloned().unwrap_or(Value::Null),
+                "success": params.get("success").and_then(Value::as_bool).unwrap_or(false),
+                "error": error
+            }))
+        }
         "account/updated" => Some(json!({
             "type": "accountUpdated",
             "authMode": params.get("authMode").cloned().unwrap_or(Value::Null),
@@ -540,8 +547,7 @@ fn normalize_notification(message: &Value) -> Option<Value> {
         "error" => {
             let detail = params
                 .get("error")
-                .and_then(|error| error.get("message"))
-                .and_then(Value::as_str)
+                .and_then(error_detail)
                 .unwrap_or("Codex generation failed.");
             Some(json!({
                 "type": "error",
@@ -579,13 +585,38 @@ fn protocol_error(error: &Value) -> String {
         .unwrap_or_else(|| "Codex rejected the protocol request.".into())
 }
 
+fn error_detail(error: &Value) -> Option<&str> {
+    error
+        .as_str()
+        .or_else(|| error.get("message").and_then(Value::as_str))
+}
+
 fn error_category(message: &str) -> &'static str {
     let message = message.to_ascii_lowercase();
-    if message.contains("auth") || message.contains("login") || message.contains("unauthorized") {
+    if message.contains("not installed")
+        || message.contains("not available on this device")
+        || message.contains("install codex")
+    {
+        "runtimeMissing"
+    } else if message.contains("runtime stopped")
+        || message.contains("runtime exited")
+        || message.contains("runtime is unavailable")
+        || message.contains("runtime is not running")
+    {
+        "runtimeUnavailable"
+    } else if message.contains("auth")
+        || message.contains("login")
+        || message.contains("unauthorized")
+        || message.contains("chatgpt account")
+    {
         "authenticationRequired"
     } else if message.contains("rate") || message.contains("usage") || message.contains("limit") {
         "usageLimit"
-    } else if message.contains("network") || message.contains("connect") {
+    } else if message.contains("network")
+        || message.contains("connection")
+        || message.contains("reach openai")
+        || message.contains("dns")
+    {
         "networkUnavailable"
     } else if message.contains("model") {
         "modelUnavailable"
@@ -601,6 +632,10 @@ fn error_category(message: &str) -> &'static str {
 
 fn user_error_message(message: &str) -> String {
     match error_category(message) {
+        "runtimeMissing" => {
+            "Install Codex or make it available to VOID Mind, then try again.".into()
+        }
+        "runtimeUnavailable" => "The Codex runtime is not available. Try reconnecting.".into(),
         "authenticationRequired" => "Connect your ChatGPT account to continue.".into(),
         "usageLimit" => "The connected account has reached a current usage limit.".into(),
         "networkUnavailable" => {
@@ -674,7 +709,7 @@ fn required_string(value: &Value, key: &str) -> Result<String, String> {
         .get(key)
         .and_then(Value::as_str)
         .map(str::to_owned)
-        .ok_or_else(|| format!("Codex omitted required {key} metadata."))
+        .ok_or_else(|| "This Codex version returned an unsupported protocol response.".to_string())
 }
 
 fn context_instructions(value: Option<String>) -> String {
@@ -699,7 +734,9 @@ pub fn codex_start(
     app: AppHandle,
     state: tauri::State<'_, CodexRuntimeManager>,
 ) -> Result<CodexRuntimeStatus, String> {
-    state.start(&app)
+    state
+        .start(&app)
+        .map_err(|error| user_error_message(&error))
 }
 
 #[tauri::command]
@@ -823,7 +860,9 @@ pub fn codex_models(
     let data = response
         .get("data")
         .and_then(Value::as_array)
-        .ok_or_else(|| "Codex returned an invalid model catalog.".to_string())?;
+        .ok_or_else(|| {
+            "This Codex version returned an unsupported protocol response.".to_string()
+        })?;
     data.iter()
         .map(|model| {
             let reasoning_efforts = model
@@ -923,9 +962,9 @@ pub fn codex_thread_start(
     )?;
     Ok(CodexThreadBinding {
         remote_thread_id: required_string(
-            response
-                .get("thread")
-                .ok_or_else(|| "Codex omitted thread metadata.".to_string())?,
+            response.get("thread").ok_or_else(|| {
+                "This Codex version returned an unsupported protocol response.".to_string()
+            })?,
             "id",
         )?,
     })
@@ -952,9 +991,9 @@ pub fn codex_thread_resume(
     )?;
     Ok(CodexThreadBinding {
         remote_thread_id: required_string(
-            response
-                .get("thread")
-                .ok_or_else(|| "Codex omitted thread metadata.".to_string())?,
+            response.get("thread").ok_or_else(|| {
+                "This Codex version returned an unsupported protocol response.".to_string()
+            })?,
             "id",
         )?,
     })
@@ -987,9 +1026,9 @@ pub fn codex_turn_start(
     )?;
     Ok(CodexTurnBinding {
         turn_id: required_string(
-            response
-                .get("turn")
-                .ok_or_else(|| "Codex omitted turn metadata.".to_string())?,
+            response.get("turn").ok_or_else(|| {
+                "This Codex version returned an unsupported protocol response.".to_string()
+            })?,
             "id",
         )?,
     })
@@ -1026,7 +1065,7 @@ pub fn open_codex_auth_url(app: AppHandle, url: String) -> Result<(), String> {
     }
     app.opener()
         .open_url(url, None::<&str>)
-        .map_err(|error| format!("Could not open the system browser: {error}"))
+        .map_err(|_| "Could not open the secure Codex sign-in page.".to_string())
 }
 
 #[cfg(test)]
@@ -1064,6 +1103,21 @@ mod tests {
         .expect("login event");
         assert_eq!(login["type"], "loginCompleted");
         assert_eq!(login["success"], true);
+
+        let failed_login = normalize_notification(&json!({
+            "method": "account/login/completed",
+            "params": {
+                "loginId": "login-2",
+                "success": false,
+                "error": { "message": "401 unauthorized secret-detail" }
+            }
+        }))
+        .expect("failed login event");
+        assert_eq!(
+            failed_login["error"],
+            "Connect your ChatGPT account to continue."
+        );
+        assert!(!failed_login.to_string().contains("secret-detail"));
     }
 
     #[test]
@@ -1082,7 +1136,10 @@ mod tests {
     #[test]
     fn maps_errors_without_exposing_protocol_details() {
         assert_eq!(error_category("401 unauthorized"), "authenticationRequired");
+        assert_eq!(error_category("Codex is not installed"), "runtimeMissing");
         assert_eq!(error_category("rate limit reached"), "usageLimit");
+        let account_error = user_error_message("401 unauthorized");
+        assert_eq!(user_error_message(&account_error), account_error);
         assert_eq!(
             user_error_message("invalid json protocol"),
             "This Codex version returned an unsupported protocol response."
