@@ -660,6 +660,68 @@ fn is_codex_name(path: &Path) -> bool {
     )
 }
 
+#[cfg(windows)]
+fn native_codex_from_npm_shim(shim: &Path) -> Option<PathBuf> {
+    let extension = shim
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if extension != "cmd" && extension != "bat" {
+        return None;
+    }
+
+    let (platform_package, target_triple) = match std::env::consts::ARCH {
+        "x86_64" => ("codex-win32-x64", "x86_64-pc-windows-msvc"),
+        "aarch64" => ("codex-win32-arm64", "aarch64-pc-windows-msvc"),
+        _ => return None,
+    };
+
+    let npm_root = shim.parent()?;
+    let launcher_root = npm_root.join("node_modules").join("@openai").join("codex");
+    let relative_native = Path::new("vendor")
+        .join(target_triple)
+        .join("bin")
+        .join("codex.exe");
+    [
+        launcher_root
+            .join("node_modules")
+            .join("@openai")
+            .join(platform_package)
+            .join(&relative_native),
+        npm_root
+            .join("node_modules")
+            .join("@openai")
+            .join(platform_package)
+            .join(&relative_native),
+        launcher_root.join(&relative_native),
+    ]
+    .into_iter()
+    .find_map(|candidate| {
+        (candidate.is_file() && is_codex_name(&candidate))
+            .then(|| candidate.canonicalize().ok())
+            .flatten()
+    })
+}
+
+fn resolve_codex_candidate(path: &Path) -> Option<PathBuf> {
+    if !path.is_file() || !is_codex_name(path) {
+        return None;
+    }
+    #[cfg(windows)]
+    if matches!(
+        path.extension()
+            .and_then(|value| value.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase()
+            .as_str(),
+        "cmd" | "bat"
+    ) {
+        return native_codex_from_npm_shim(path);
+    }
+    path.canonicalize().ok()
+}
+
 fn locate_codex() -> Option<PathBuf> {
     let mut candidates = Vec::new();
     if let Some(path) = env::var_os("PATH") {
@@ -686,8 +748,7 @@ fn locate_codex() -> Option<PathBuf> {
     }
     candidates
         .into_iter()
-        .filter(|path| path.is_file() && is_codex_name(path))
-        .find_map(|path| path.canonicalize().ok())
+        .find_map(|path| resolve_codex_candidate(&path))
 }
 
 fn codex_version(path: &Path) -> String {
@@ -1070,7 +1131,10 @@ pub fn open_codex_auth_url(app: AppHandle, url: String) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{error_category, is_codex_name, normalize_notification, user_error_message};
+    use super::{
+        error_category, is_codex_name, normalize_notification, resolve_codex_candidate,
+        user_error_message,
+    };
     use serde_json::json;
     use std::path::Path;
 
@@ -1079,6 +1143,45 @@ mod tests {
         assert!(is_codex_name(Path::new("codex.exe")));
         assert!(is_codex_name(Path::new("codex")));
         assert!(!is_codex_name(Path::new("powershell.exe")));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn resolves_the_native_binary_behind_an_official_npm_shim() {
+        use std::{
+            fs,
+            time::{SystemTime, UNIX_EPOCH},
+        };
+
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("void-mind-codex-shim-{nonce}"));
+        let shim = root.join("codex.cmd");
+        let (platform_package, target_triple) = match std::env::consts::ARCH {
+            "x86_64" => ("codex-win32-x64", "x86_64-pc-windows-msvc"),
+            "aarch64" => ("codex-win32-arm64", "aarch64-pc-windows-msvc"),
+            _ => return,
+        };
+        let native = root
+            .join("node_modules")
+            .join("@openai")
+            .join("codex")
+            .join("node_modules")
+            .join("@openai")
+            .join(platform_package)
+            .join("vendor")
+            .join(target_triple)
+            .join("bin")
+            .join("codex.exe");
+        fs::create_dir_all(native.parent().unwrap()).unwrap();
+        fs::write(&shim, "@echo off").unwrap();
+        fs::write(&native, []).unwrap();
+
+        assert_eq!(resolve_codex_candidate(&shim), native.canonicalize().ok());
+
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
