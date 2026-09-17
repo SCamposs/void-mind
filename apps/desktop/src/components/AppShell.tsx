@@ -42,14 +42,32 @@ export function AppShell({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!compact || !open) return;
     navigation.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => {
+    const handleNavigationKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpen(false);
         menuButton.current?.focus();
+      } else if (event.key === "Tab") {
+        const focusable = [
+          menuButton.current,
+          ...Array.from(navigation.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? [])
+        ].filter((element): element is HTMLButtonElement => Boolean(element));
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (!first || !last) return;
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        } else if (!focusable.includes(document.activeElement as HTMLButtonElement)) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", handleNavigationKeyDown);
+    return () => window.removeEventListener("keydown", handleNavigationKeyDown);
   }, [compact, open, setOpen]);
 
   return (
@@ -62,6 +80,7 @@ export function AppShell({ children }: PropsWithChildren) {
           onClick={() => setOpen(!open)}
           aria-label={open ? "Close navigation" : "Open navigation"}
           aria-expanded={open}
+          aria-controls="primary-navigation"
         >
           {open ? <X size={18} /> : <Menu size={18} />}
         </button>
@@ -84,6 +103,7 @@ export function AppShell({ children }: PropsWithChildren) {
       <div className="app-body">
         <nav
           ref={navigation}
+          id="primary-navigation"
           className={`primary-nav ${open ? "is-open" : ""}`}
           aria-label="Primary"
           aria-hidden={compact && !open}

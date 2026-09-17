@@ -144,7 +144,7 @@ export function SelectControl({
         <ChevronDown size={14} aria-hidden="true" />
       </button>
       {open && createPortal(
-        <div className="select-popover-layer" onMouseDown={() => close()}>
+        <div className="select-popover-layer" onMouseDown={() => close(false)}>
           <div
             ref={menu}
             id={id}

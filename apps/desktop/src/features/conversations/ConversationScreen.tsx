@@ -20,6 +20,8 @@ export function ConversationScreen() {
   const scroll = useRef<HTMLDivElement>(null);
   const historyPanel = useRef<HTMLDivElement>(null);
   const historyToggle = useRef<HTMLButtonElement>(null);
+  const contextPanel = useRef<HTMLElement>(null);
+  const contextToggle = useRef<HTMLButtonElement>(null);
   const controller = useRef<AbortController | null>(null);
   const provider = useRef<MindProvider | null>(null);
   const activeAssistantId = useRef<string | null>(null);
@@ -53,20 +55,53 @@ export function ConversationScreen() {
 
   useEffect(() => {
     setHistoryOpen(false);
+    setContextOpen(false);
   }, [state.selectedConversationId]);
 
   useEffect(() => {
     if (!compactHistory || !historyOpen) return;
     historyPanel.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => {
+    const handleHistoryKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setHistoryOpen(false);
         historyToggle.current?.focus();
+      } else if (event.key === "Tab") {
+        const focusable = [
+          ...Array.from(historyPanel.current?.querySelectorAll<HTMLElement>(
+            "button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex='-1'])"
+          ) ?? []),
+          historyToggle.current
+        ].filter((element): element is HTMLElement => Boolean(element));
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (!first || !last) return;
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        } else if (!focusable.includes(document.activeElement as HTMLElement)) {
+          event.preventDefault();
+          first.focus();
+        }
       }
+    };
+    window.addEventListener("keydown", handleHistoryKeyDown);
+    return () => window.removeEventListener("keydown", handleHistoryKeyDown);
+  }, [compactHistory, historyOpen]);
+
+  useEffect(() => {
+    if (!contextOpen) return;
+    contextPanel.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setContextOpen(false);
+      contextToggle.current?.focus();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [compactHistory, historyOpen]);
+  }, [contextOpen]);
 
   const runGeneration = useCallback(async () => {
     const snapshot = useMindStore.getState();
@@ -240,7 +275,7 @@ export function ConversationScreen() {
             <p>{selectedModel ? `${selectedModel.displayName} · ${resolution.source}` : "No model active"}</p>
           </div>
           {conversation && workspace && (
-            <button className="context-button" type="button" onClick={() => setContextOpen(!contextOpen)} aria-expanded={contextOpen}>
+            <button ref={contextToggle} className="context-button" type="button" onClick={() => setContextOpen(!contextOpen)} aria-expanded={contextOpen} aria-controls="conversation-context">
               <BookOpen size={15} /> Context
               {(conversation.contextKnowledgeIds?.length ?? 0) > 0 && <span>{conversation.contextKnowledgeIds?.length}</span>}
             </button>
@@ -248,8 +283,8 @@ export function ConversationScreen() {
         </header>
 
         {contextOpen && conversation && workspace && (
-          <aside className="context-panel" aria-label="Conversation context">
-            <header><div><strong>{workspace.name}</strong><span>Workspace context</span></div><button type="button" onClick={() => setContextOpen(false)} aria-label="Close context"><X size={15} /></button></header>
+          <aside ref={contextPanel} id="conversation-context" className="context-panel" aria-label="Conversation context">
+            <header><div><strong>{workspace.name}</strong><span>Workspace context</span></div><button type="button" onClick={() => { setContextOpen(false); contextToggle.current?.focus(); }} aria-label="Close context"><X size={15} /></button></header>
             {workspace.instructions && <p>{workspace.instructions}</p>}
             <div className="context-sources">
               {state.knowledge.filter((item) => item.workspaceId === workspace.id).map((item) => (
