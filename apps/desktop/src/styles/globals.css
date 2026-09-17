@@ -1587,6 +1587,7 @@ summary {
 .onboarding-points span { display: flex; align-items: center; gap: 8px; }
 .onboarding-actions { display: flex; gap: 9px; }
 .onboarding-status { margin-top: 18px !important; color: var(--mind-muted) !important; font-size: 0.72rem; }
+.onboarding-status.is-error { color: var(--mind-error) !important; }
 
 .switcher-backdrop {
   position: fixed;

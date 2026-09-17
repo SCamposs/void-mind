@@ -1,27 +1,12 @@
 import { ArrowRight, Check, ShieldCheck } from "lucide-react";
-import { useState } from "react";
-import { codexBridge } from "../../lib/codex-bridge";
+import { useCodexLogin } from "../../lib/use-codex-login";
 import { useMindStore } from "../../stores/mind-store";
 import { VoidMark } from "../../components/VoidMark";
 
 export function OnboardingScreen() {
   const state = useMindStore();
-  const [working, setWorking] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const connect = async () => {
-    setWorking(true);
-    setMessage("");
-    try {
-      const login = await codexBridge.beginLogin("browser");
-      if (login.authUrl) await codexBridge.openAuthUrl(login.authUrl);
-      setMessage("Finish signing in in the browser, then return here.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
-    } finally {
-      setWorking(false);
-    }
-  };
+  const { login, beginLogin, cancelLogin } = useCodexLogin();
+  const connected = state.codexAccount?.state === "connected";
 
   return (
     <div className="onboarding-screen">
@@ -35,13 +20,18 @@ export function OnboardingScreen() {
         <span><ShieldCheck size={14} /> Read-only runtime with approvals disabled</span>
       </div>
       <div className="onboarding-actions">
-        <button className="primary-button" type="button" disabled={working} onClick={() => void connect()}>Connect ChatGPT <ArrowRight size={15} /></button>
-        <button className="secondary-button" type="button" onClick={() => state.updatePreferences({ onboardingComplete: true })}>Set up later</button>
+        {connected ? (
+          <button className="primary-button" type="button" onClick={() => state.updatePreferences({ onboardingComplete: true })}>Continue to VOID Mind <ArrowRight size={15} /></button>
+        ) : (
+          <>
+            <button className="primary-button" type="button" disabled={login.state === "pending"} onClick={() => void beginLogin("browser")}>Connect ChatGPT <ArrowRight size={15} /></button>
+            <button className="secondary-button" type="button" disabled={login.state === "pending"} onClick={() => state.updatePreferences({ onboardingComplete: true })}>Set up later</button>
+          </>
+        )}
       </div>
-      {message && <p className="onboarding-status" role="status">{message}</p>}
-      {state.codexAccount?.state === "connected" && (
-        <button className="text-button" type="button" onClick={() => state.updatePreferences({ onboardingComplete: true })}>Continue to VOID Mind <ArrowRight size={14} /></button>
-      )}
+      {login.userCode && <div className="device-code"><span>One-time code</span><strong>{login.userCode}</strong></div>}
+      {login.message && <p className={`onboarding-status is-${login.state}`} role={login.state === "error" ? "alert" : "status"}>{login.message}</p>}
+      {login.loginId && <button className="text-button" type="button" onClick={() => void cancelLogin()}>Cancel sign-in</button>}
     </div>
   );
 }

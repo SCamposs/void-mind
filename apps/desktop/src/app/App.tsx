@@ -72,8 +72,20 @@ export function App() {
     };
     void refresh();
     void codexBridge.subscribe((event) => {
-      if (event.type === "loginCompleted" || event.type === "accountUpdated") void refresh();
-    }).then((stop) => { unsubscribe = stop; }).catch(() => undefined);
+      if (!active) return;
+      if (event.type === "loginCompleted") {
+        useMindStore.getState().setCodexLogin(event.success
+          ? { state: "success", message: "ChatGPT account connected." }
+          : { state: "error", message: event.error || "ChatGPT sign-in could not be completed." }
+        );
+        void refresh();
+      } else if (event.type === "accountUpdated") {
+        void refresh();
+      }
+    }).then((stop) => {
+      if (active) unsubscribe = stop;
+      else stop();
+    }).catch(() => undefined);
     return () => {
       active = false;
       unsubscribe?.();

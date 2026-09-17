@@ -36,6 +36,12 @@ import { create } from "zustand";
 
 export type AppSection = "home" | "conversations" | "workspaces" | "knowledge" | "models" | "settings";
 export type GenerationState = "idle" | "connecting" | "generating" | "stopped" | "error";
+export type CodexLoginState = {
+  state: "idle" | "pending" | "success" | "error";
+  loginId?: string;
+  userCode?: string;
+  message?: string;
+};
 
 type MindActions = {
   section: AppSection;
@@ -45,6 +51,7 @@ type MindActions = {
   providerHealth: ProviderHealth | null;
   codexStatus: CodexRuntimeStatus | null;
   codexAccount: CodexAccountState | null;
+  codexLogin: CodexLoginState;
   queuedGenerationId: string | null;
   storageHealthy: boolean;
   setSection(section: AppSection): void;
@@ -65,6 +72,7 @@ type MindActions = {
   setProviderHealth(health: ProviderHealth | null): void;
   setCodexStatus(status: CodexRuntimeStatus | null): void;
   setCodexAccount(account: CodexAccountState | null): void;
+  setCodexLogin(login: CodexLoginState): void;
   queueGeneration(conversationId: string | null): void;
   setModels(models: ModelDescriptor[]): void;
   setProviderModels(providerId: string, models: ModelDescriptor[]): void;
@@ -108,6 +116,7 @@ export const useMindStore = create<MindStore>()((set) => ({
   providerHealth: null,
   codexStatus: null,
   codexAccount: null,
+  codexLogin: { state: "idle" },
   queuedGenerationId: null,
   storageHealthy: true,
   setSection: (section) => set({ section, navigationOpen: false }),
@@ -212,6 +221,7 @@ export const useMindStore = create<MindStore>()((set) => ({
   setProviderHealth: (providerHealth) => set({ providerHealth }),
   setCodexStatus: (codexStatus) => set({ codexStatus }),
   setCodexAccount: (codexAccount) => set({ codexAccount }),
+  setCodexLogin: (codexLogin) => set({ codexLogin }),
   queueGeneration: (queuedGenerationId) => set({ queuedGenerationId }),
   setModels: (models) =>
     set((state) => ({

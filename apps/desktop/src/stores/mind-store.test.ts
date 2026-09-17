@@ -20,6 +20,7 @@ describe("mind store streaming updates", () => {
       providerHealth: null,
       codexStatus: null,
       codexAccount: null,
+      codexLogin: { state: "idle" },
       queuedGenerationId: null,
       storageHealthy: true
     });

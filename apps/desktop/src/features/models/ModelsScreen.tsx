@@ -4,6 +4,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { LlamaServerProvider, normalizeCodexModels } from "@void-mind/providers";
 import { codexBridge } from "../../lib/codex-bridge";
 import { runtimeBridge } from "../../lib/runtime-bridge";
+import { useCodexLogin } from "../../lib/use-codex-login";
 import { useMindStore } from "../../stores/mind-store";
 import { SelectControl } from "../../components/SelectControl";
 
@@ -11,10 +12,11 @@ type ActionState = "idle" | "working" | "success" | "error";
 
 export function ModelsScreen() {
   const state = useMindStore();
-  const [action, setAction] = useState<ActionState>("idle");
-  const [message, setMessage] = useState("");
-  const [loginCode, setLoginCode] = useState<string | null>(null);
-  const [loginId, setLoginId] = useState<string | null>(null);
+  const { login, beginLogin, cancelLogin } = useCodexLogin();
+  const [runtimeAction, setRuntimeAction] = useState<ActionState>("idle");
+  const [runtimeMessage, setRuntimeMessage] = useState("");
+  const [accountWorking, setAccountWorking] = useState(false);
+  const [accountMessage, setAccountMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const selectedModel = state.models.find((model) => model.id === state.selectedModelId);
 
   const refreshCodex = async () => {
@@ -24,68 +26,42 @@ export function ModelsScreen() {
     state.setCodexAccount(account);
     if (account.state === "connected") {
       state.setProviderModels("openai-codex", normalizeCodexModels(await codexBridge.models()));
-    }
-  };
-
-  const connectCodex = async (flow: "browser" | "deviceCode") => {
-    setAction("working");
-    setMessage("Starting secure ChatGPT sign-in through Codex…");
-    try {
-      const login = await codexBridge.beginLogin(flow);
-      setLoginId(login.loginId);
-      if (login.authUrl) await codexBridge.openAuthUrl(login.authUrl);
-      if (login.verificationUrl) await codexBridge.openAuthUrl(login.verificationUrl);
-      setLoginCode(login.userCode ?? null);
-      setMessage(login.userCode ? "Enter this one-time code in the opened browser." : "Finish signing in in the opened browser.");
-    } catch (error) {
-      setAction("error");
-      setMessage(error instanceof Error ? error.message : String(error));
-    }
-  };
-
-  const cancelLogin = async () => {
-    if (!loginId) return;
-    try {
-      await codexBridge.cancelLogin(loginId);
-      setLoginId(null);
-      setLoginCode(null);
-      setAction("idle");
-      setMessage("Sign-in cancelled.");
-    } catch (error) {
-      setAction("error");
-      setMessage(error instanceof Error ? error.message : String(error));
+    } else {
+      state.setProviderModels("openai-codex", []);
     }
   };
 
   const disconnectCodex = async () => {
-    setAction("working");
+    setAccountWorking(true);
+    setAccountMessage(null);
     try {
       await codexBridge.logout();
       await refreshCodex();
-      setAction("success");
-      setMessage("ChatGPT account disconnected from the Codex runtime.");
+      state.setCodexLogin({ state: "idle" });
+      setAccountMessage({ kind: "success", text: "ChatGPT account disconnected from the Codex runtime." });
     } catch (error) {
-      setAction("error");
-      setMessage(error instanceof Error ? error.message : String(error));
+      setAccountMessage({ kind: "error", text: error instanceof Error ? error.message : String(error) });
+    } finally {
+      setAccountWorking(false);
     }
   };
 
   const checkRuntime = async () => {
-    setAction("working");
-    setMessage("Checking the local runtime…");
+    setRuntimeAction("working");
+    setRuntimeMessage("Checking the local runtime…");
     try {
       const provider = new LlamaServerProvider(state.runtime.endpoint);
       const health = await provider.health();
       state.setProviderHealth(health);
       if (!health.ok) {
-        setAction(health.state === "loading" ? "working" : "error");
-        setMessage(health.detail || "The local runtime is not ready.");
+        setRuntimeAction(health.state === "loading" ? "working" : "error");
+        setRuntimeMessage(health.detail || "The local runtime is not ready.");
         return;
       }
       const models = await provider.models();
       state.setProviderModels("void-local", models);
-      setAction("success");
-      setMessage(
+      setRuntimeAction("success");
+      setRuntimeMessage(
         models.length
           ? `Connected to ${models[0].displayName} on loopback.`
           : "The runtime is ready, but it did not report a model."
@@ -96,8 +72,8 @@ export function ModelsScreen() {
         state: "error",
         detail: error instanceof Error ? error.message : "Runtime check failed."
       });
-      setAction("error");
-      setMessage(error instanceof Error ? error.message : "Runtime check failed.");
+      setRuntimeAction("error");
+      setRuntimeMessage(error instanceof Error ? error.message : "Runtime check failed.");
     }
   };
 
@@ -117,38 +93,38 @@ export function ModelsScreen() {
         );
       }
     } catch {
-      setAction("error");
-      setMessage("File selection is available in the installed desktop app.");
+      setRuntimeAction("error");
+      setRuntimeMessage("File selection is available in the installed desktop app.");
     }
   };
 
   const startManaged = async () => {
-    setAction("working");
-    setMessage("Starting the selected model on loopback…");
+    setRuntimeAction("working");
+    setRuntimeMessage("Starting the selected model on loopback…");
     try {
       await runtimeBridge.start(state.runtime);
       state.updateRuntime({
         endpoint: `http://127.0.0.1:${state.runtime.port}`
       });
-      setMessage("llama-server started. The model may need a moment to load.");
+      setRuntimeMessage("llama-server started. The model may need a moment to load.");
       window.setTimeout(() => void checkRuntime(), 900);
     } catch (error) {
-      setAction("error");
-      setMessage(error instanceof Error ? error.message : String(error));
+      setRuntimeAction("error");
+      setRuntimeMessage(error instanceof Error ? error.message : String(error));
     }
   };
 
   const stopManaged = async () => {
-    setAction("working");
-    setMessage("Stopping the managed runtime…");
+    setRuntimeAction("working");
+    setRuntimeMessage("Stopping the managed runtime…");
     try {
       await runtimeBridge.stop();
       state.setProviderHealth(null);
-      setAction("success");
-      setMessage("Managed runtime stopped.");
+      setRuntimeAction("success");
+      setRuntimeMessage("Managed runtime stopped.");
     } catch (error) {
-      setAction("error");
-      setMessage(error instanceof Error ? error.message : String(error));
+      setRuntimeAction("error");
+      setRuntimeMessage(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -174,16 +150,18 @@ export function ModelsScreen() {
           {state.codexAccount?.state === "connected" ? (
             <div className="account-row">
               <div><strong>{state.codexAccount.email ?? "Connected account"}</strong><span>{state.codexAccount.planType ? `ChatGPT ${state.codexAccount.planType}` : "Ready"}</span></div>
-              <button className="secondary-button" type="button" onClick={() => void disconnectCodex()}><LogOut size={14} /> Disconnect</button>
+              <button className="secondary-button" type="button" disabled={accountWorking} onClick={() => void disconnectCodex()}><LogOut size={14} /> Disconnect</button>
             </div>
           ) : (
             <div className="button-row">
-              <button className="primary-button" type="button" onClick={() => void connectCodex("browser")}><LogIn size={15} /> Continue with ChatGPT</button>
-              <button className="secondary-button" type="button" onClick={() => void connectCodex("deviceCode")}>Use device code</button>
+              <button className="primary-button" type="button" disabled={login.state === "pending"} onClick={() => void beginLogin("browser")}><LogIn size={15} /> Continue with ChatGPT</button>
+              <button className="secondary-button" type="button" disabled={login.state === "pending"} onClick={() => void beginLogin("deviceCode")}>Use device code</button>
             </div>
           )}
-          {loginCode && <div className="device-code"><span>One-time code</span><strong>{loginCode}</strong></div>}
-          {loginId && state.codexAccount?.state !== "connected" && <button className="text-button" type="button" onClick={() => void cancelLogin()}>Cancel sign-in</button>}
+          {login.userCode && <div className="device-code"><span>One-time code</span><strong>{login.userCode}</strong></div>}
+          {login.message && <div className={`status-message is-${login.state}`} role={login.state === "error" ? "alert" : "status"}>{login.message}</div>}
+          {login.loginId && state.codexAccount?.state !== "connected" && <button className="text-button" type="button" onClick={() => void cancelLogin()}>Cancel sign-in</button>}
+          {accountMessage && <div className={`status-message is-${accountMessage.kind}`} role={accountMessage.kind === "error" ? "alert" : "status"}>{accountMessage.text}</div>}
           {state.codexStatus?.version && <p className="runtime-detail">Codex {state.codexStatus.version}</p>}
         </section>
 
@@ -301,12 +279,12 @@ export function ModelsScreen() {
             </div>
           )}
 
-          {message && (
-            <div className={`status-message is-${action}`} role={action === "error" ? "alert" : "status"}>
-              {action === "working" && <LoaderCircle className="spin" size={16} />}
-              {action === "success" && <CheckCircle2 size={16} />}
-              {action === "error" && <CircleAlert size={16} />}
-              <span>{message}</span>
+          {runtimeMessage && (
+            <div className={`status-message is-${runtimeAction}`} role={runtimeAction === "error" ? "alert" : "status"}>
+              {runtimeAction === "working" && <LoaderCircle className="spin" size={16} />}
+              {runtimeAction === "success" && <CheckCircle2 size={16} />}
+              {runtimeAction === "error" && <CircleAlert size={16} />}
+              <span>{runtimeMessage}</span>
             </div>
           )}
         </section>
