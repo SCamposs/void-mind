@@ -15,6 +15,13 @@ class MemoryStorage {
   removeItem() { this.value = null; }
 }
 
+const legacySystemInstructions = [
+  "You are VOID Mind, a general-purpose local conversational AI.",
+  "Be clear, useful, and honest about uncertainty across conversation, reasoning, writing, study, brainstorming, and explanation.",
+  "Reply in Brazilian Portuguese when the user writes in Portuguese, while retaining strong English support.",
+  "You have no autonomous tools, shell access, repository access, telemetry, or cloud inference."
+].join(" ");
+
 describe("versioned persistence", () => {
   it("returns defaults for malformed data", () => {
     expect(migrateMindState("broken").runtime.endpoint).toBe("http://127.0.0.1:8080");
@@ -26,10 +33,15 @@ describe("versioned persistence", () => {
   it("repairs malformed profile, runtime, and preference fields independently", () => {
     const state = migrateMindState({
       selectedProfileId: "custom",
-      profiles: [{ id: "general", name: 42, settings: { temperature: 9 } }],
+      profiles: [{ id: "general", name: "Stale", settings: { temperature: 1.9 } }],
       customProfile: {
         id: "broken",
-        settings: { temperature: Number.NaN, topP: 0, maxTokens: "many" }
+        settings: {
+          systemInstructions: legacySystemInstructions,
+          temperature: Number.NaN,
+          topP: 0,
+          maxTokens: "many"
+        }
       },
       runtime: { mode: "managed", port: 80, context: -1, gpuLayers: 4.5 },
       preferences: { onboardingComplete: "yes", showBootIntro: false }
@@ -44,6 +56,7 @@ describe("versioned persistence", () => {
     expect(state.customProfile).toMatchObject({
       id: "custom",
       settings: {
+        systemInstructions: DEFAULT_MIND_STATE.customProfile.settings.systemInstructions,
         temperature: DEFAULT_MIND_STATE.customProfile.settings.temperature,
         topP: DEFAULT_MIND_STATE.customProfile.settings.topP,
         maxTokens: DEFAULT_MIND_STATE.customProfile.settings.maxTokens

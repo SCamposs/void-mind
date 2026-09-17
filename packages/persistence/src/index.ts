@@ -15,7 +15,14 @@ import {
 } from "@void-mind/mind-core";
 
 export const MIND_STORAGE_KEY = "void-mind:state";
-export const MIND_STORAGE_VERSION = 5;
+export const MIND_STORAGE_VERSION = 6;
+
+const LEGACY_DEFAULT_SYSTEM_INSTRUCTIONS = [
+  "You are VOID Mind, a general-purpose local conversational AI.",
+  "Be clear, useful, and honest about uncertainty across conversation, reasoning, writing, study, brainstorming, and explanation.",
+  "Reply in Brazilian Portuguese when the user writes in Portuguese, while retaining strong English support.",
+  "You have no autonomous tools, shell access, repository access, telemetry, or cloud inference."
+].join(" ");
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
@@ -176,7 +183,8 @@ function generationSettings(value: unknown, fallback: GenerationSettings): Gener
   const source = isRecord(value) ? value : {};
   return {
     systemInstructions:
-      typeof source.systemInstructions === "string"
+      typeof source.systemInstructions === "string" &&
+      source.systemInstructions !== LEGACY_DEFAULT_SYSTEM_INSTRUCTIONS
         ? source.systemInstructions
         : fallback.systemInstructions,
     temperature: safeNumber(source.temperature, fallback.temperature, (item) => item >= 0 && item <= 2),
@@ -192,19 +200,8 @@ function generationSettings(value: unknown, fallback: GenerationSettings): Gener
   };
 }
 
-function profiles(value: unknown): Profile[] {
-  const stored = Array.isArray(value) ? value.filter(isRecord) : [];
-  return DEFAULT_PROFILES.map((fallback) => {
-    const source = stored.find((item) => item.id === fallback.id);
-    if (!source) return structuredClone(fallback);
-    return {
-      id: fallback.id,
-      name: typeof source.name === "string" ? source.name : fallback.name,
-      description:
-        typeof source.description === "string" ? source.description : fallback.description,
-      settings: generationSettings(source.settings, fallback.settings)
-    };
-  });
+function profiles(): Profile[] {
+  return structuredClone(DEFAULT_PROFILES);
 }
 
 function customProfile(value: unknown): Profile {
@@ -314,7 +311,7 @@ export function migrateMindState(value: unknown): MindState {
         ? source.selectedWorkspaceId
         : null,
     knowledge: foundKnowledge,
-    profiles: profiles(source.profiles),
+    profiles: profiles(),
     selectedProfileId: profileId(source.selectedProfileId ?? source.profile),
     customProfile: customProfile(source.customProfile),
     models: models(source.models),
