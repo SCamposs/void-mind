@@ -23,6 +23,15 @@ export type GenerationRequest = {
   serviceTier?: string;
 };
 
+export function effectiveSystemInstructions(
+  request: Pick<GenerationRequest, "settings" | "contextInstructions">
+): string {
+  return [request.settings.systemInstructions, request.contextInstructions]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 export type ProviderEvent =
   | { type: "binding"; remoteThreadId: string }
   | { type: "start"; turnId?: string }

@@ -779,9 +779,9 @@ fn context_instructions(value: Option<String>) -> String {
         .filter(|value| !value.is_empty())
     {
         Some(value) => format!(
-            "Follow this explicit user-owned VOID Mind workspace context when relevant:\n\n{value}"
+            "Follow these explicit user-owned VOID Mind response and workspace instructions when relevant:\n\n{value}"
         ),
-        None => "No workspace instructions or knowledge sources are active.".into(),
+        None => "No additional response or workspace instructions are active.".into(),
     }
 }
 

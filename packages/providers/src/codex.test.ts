@@ -113,7 +113,33 @@ describe("Codex provider", () => {
     ]);
     expect(bridge.startThread).toHaveBeenCalledWith({
       model: "runtime-model",
-      contextInstructions: undefined
+      contextInstructions: DEFAULT_GENERATION_SETTINGS.systemInstructions
+    });
+  });
+
+  it("forwards the effective response profile and workspace context to Codex", async () => {
+    const { bridge, emit } = createBridge();
+    const provider = new CodexProvider(bridge);
+    const consume = (async () => {
+      for await (const _event of provider.generate({
+        ...request,
+        contextInstructions: "Selected workspace context.",
+        settings: {
+          ...request.settings,
+          systemInstructions: "Custom response profile."
+        }
+      })) {
+        void _event;
+      }
+    })();
+
+    await vi.waitFor(() => expect(bridge.startTurn).toHaveBeenCalled());
+    emit({ type: "turnCompleted", threadId: "thread-1", turnId: "turn-1", status: "completed" });
+    await consume;
+
+    expect(bridge.startThread).toHaveBeenCalledWith({
+      model: "runtime-model",
+      contextInstructions: "Custom response profile.\n\nSelected workspace context."
     });
   });
 

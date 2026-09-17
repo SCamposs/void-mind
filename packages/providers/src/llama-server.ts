@@ -5,6 +5,7 @@ import type {
   ProviderEvent,
   ProviderHealth
 } from "./types";
+import { effectiveSystemInstructions } from "./types";
 
 type FetchLike = typeof fetch;
 
@@ -184,7 +185,7 @@ export class LlamaServerProvider implements MindProvider {
         body: JSON.stringify({
           model: request.model.identifier,
           messages: [
-            { role: "system", content: request.settings.systemInstructions },
+            { role: "system", content: effectiveSystemInstructions(request) },
             ...request.messages.map(({ role, content }) => ({ role, content }))
           ],
           stream: true,

@@ -5,6 +5,7 @@ import type {
   ProviderEvent,
   ProviderHealth
 } from "./types";
+import { effectiveSystemInstructions } from "./types";
 
 export type CodexRuntimeStatus = {
   installed: boolean;
@@ -229,15 +230,16 @@ export class CodexProvider implements MindProvider {
 
     try {
       throwIfAborted(signal);
+      const instructions = effectiveSystemInstructions(request);
       const binding = request.remoteThreadId
         ? await this.bridge.resumeThread({
             remoteThreadId: request.remoteThreadId,
             model: request.model.identifier,
-            contextInstructions: request.contextInstructions
+            contextInstructions: instructions
           })
         : await this.bridge.startThread({
             model: request.model.identifier,
-            contextInstructions: request.contextInstructions
+            contextInstructions: instructions
           });
       throwIfAborted(signal);
       if (!request.remoteThreadId) {

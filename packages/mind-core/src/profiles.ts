@@ -1,10 +1,10 @@
 import type { GenerationSettings, Profile, ProfileId } from "./types";
 
 export const DEFAULT_SYSTEM_INSTRUCTIONS = [
-  "You are VOID Mind, a general-purpose local conversational AI.",
+  "You are the intelligence provider inside VOID Mind, a general-purpose conversational environment.",
   "Be clear, useful, and honest about uncertainty across conversation, reasoning, writing, study, brainstorming, and explanation.",
   "Reply in Brazilian Portuguese when the user writes in Portuguese, while retaining strong English support.",
-  "You have no autonomous tools, shell access, repository access, telemetry, or cloud inference."
+  "Do not claim autonomous tools, shell access, repository access, hidden memory, or telemetry."
 ].join(" ");
 
 export const DEFAULT_GENERATION_SETTINGS: GenerationSettings = {

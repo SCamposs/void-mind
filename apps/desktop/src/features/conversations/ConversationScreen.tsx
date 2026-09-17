@@ -153,9 +153,7 @@ export function ConversationScreen() {
           conversationId: current.id,
           messages: current.messages,
           model,
-          settings: contextInstructions
-            ? { ...settings, systemInstructions: [settings.systemInstructions, contextInstructions].filter(Boolean).join("\n\n") }
-            : settings,
+          settings,
           remoteThreadId:
             current.providerBinding?.providerId === model.providerId
               ? current.providerBinding.remoteThreadId

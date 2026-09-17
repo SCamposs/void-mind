@@ -57,6 +57,7 @@ describe("llama-server provider", () => {
   });
 
   it("streams tokens and declares local capabilities", async () => {
+    let requestBody: { messages: Array<{ role: string; content: string }> } | undefined;
     const stream = new ReadableStream({
       start(controller) {
         controller.enqueue(
@@ -68,7 +69,10 @@ describe("llama-server provider", () => {
     });
     const provider = new LlamaServerProvider(
       "http://127.0.0.1:8080",
-      vi.fn(async () => new Response(stream)) as typeof fetch
+      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        requestBody = JSON.parse(String(init?.body));
+        return new Response(stream);
+      }) as typeof fetch
     );
     const events = [];
     for await (const event of provider.generate({
@@ -84,11 +88,16 @@ describe("llama-server provider", () => {
         languages: [],
         capabilities: []
       },
-      settings: DEFAULT_GENERATION_SETTINGS
+      settings: DEFAULT_GENERATION_SETTINGS,
+      contextInstructions: "Selected workspace context."
     })) {
       events.push(event);
     }
     expect(events.map((event) => event.type)).toEqual(["start", "token", "done"]);
+    expect(requestBody?.messages[0]).toEqual({
+      role: "system",
+      content: `${DEFAULT_GENERATION_SETTINGS.systemInstructions}\n\nSelected workspace context.`
+    });
     expect(provider.capabilities).toMatchObject({
       streaming: true,
       cancellation: true,

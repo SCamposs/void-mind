@@ -19,6 +19,8 @@ Malformed lines, timeouts, exits, and unsupported server requests become bounded
 
 Local conversations persist the returned Codex thread ID. Start and resume requests use a neutral app-data directory, `approvalPolicy: never`, `sandbox: read-only`, and general-purpose instructions. Turns repeat the no-approval/read-only policy and disable network access for sandboxed tools. The product exposes no tool or approval workflow and rejects server-initiated requests.
 
+The active response profile is combined with the visible Workspace instructions and explicitly selected Knowledge sources before a thread starts or resumes. This keeps response controls consistent across Codex and llama.cpp without creating hidden context.
+
 ## Models and errors
 
 The catalog comes from `model/list`; display names, defaults, input modalities, reasoning efforts, and service tiers are not hardcoded. Provider selection never silently falls back. Errors are sanitized into user-facing categories while details remain bounded.
