@@ -23,6 +23,44 @@ describe("versioned persistence", () => {
     expect(loadMindState(storage).profiles).toHaveLength(4);
   });
 
+  it("repairs malformed profile, runtime, and preference fields independently", () => {
+    const state = migrateMindState({
+      selectedProfileId: "custom",
+      profiles: [{ id: "general", name: 42, settings: { temperature: 9 } }],
+      customProfile: {
+        id: "broken",
+        settings: { temperature: Number.NaN, topP: 0, maxTokens: "many" }
+      },
+      runtime: { mode: "managed", port: 80, context: -1, gpuLayers: 4.5 },
+      preferences: { onboardingComplete: "yes", showBootIntro: false }
+    });
+
+    expect(state.profiles).toHaveLength(4);
+    expect(state.profiles[0]).toMatchObject({
+      id: "general",
+      name: "General",
+      settings: { temperature: DEFAULT_MIND_STATE.profiles[0].settings.temperature }
+    });
+    expect(state.customProfile).toMatchObject({
+      id: "custom",
+      settings: {
+        temperature: DEFAULT_MIND_STATE.customProfile.settings.temperature,
+        topP: DEFAULT_MIND_STATE.customProfile.settings.topP,
+        maxTokens: DEFAULT_MIND_STATE.customProfile.settings.maxTokens
+      }
+    });
+    expect(state.runtime).toMatchObject({
+      mode: "managed",
+      port: DEFAULT_MIND_STATE.runtime.port,
+      context: DEFAULT_MIND_STATE.runtime.context,
+      gpuLayers: DEFAULT_MIND_STATE.runtime.gpuLayers
+    });
+    expect(state.preferences).toEqual({
+      ...DEFAULT_MIND_STATE.preferences,
+      showBootIntro: false
+    });
+  });
+
   it("migrates an older partial chat state", () => {
     const state = migrateMindState({
       activeChatId: "chat-1",

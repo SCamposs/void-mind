@@ -1,19 +1,21 @@
 import {
   DEFAULT_CUSTOM_PROFILE,
-  DEFAULT_GENERATION_SETTINGS,
   DEFAULT_PROFILES,
   type Conversation,
+  type GenerationSettings,
   type KnowledgeItem,
+  type LocalRuntimeConfig,
   type MindState,
   type ModelDescriptor,
   type Profile,
   type ProfileId,
   type ProviderPreference,
+  type UserPreferences,
   type Workspace
 } from "@void-mind/mind-core";
 
 export const MIND_STORAGE_KEY = "void-mind:state";
-export const MIND_STORAGE_VERSION = 4;
+export const MIND_STORAGE_VERSION = 5;
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
@@ -160,8 +162,94 @@ function profileId(value: unknown): ProfileId {
     : "general";
 }
 
+function safeNumber(
+  value: unknown,
+  fallback: number,
+  valid: (candidate: number) => boolean
+): number {
+  return typeof value === "number" && Number.isFinite(value) && valid(value)
+    ? value
+    : fallback;
+}
+
+function generationSettings(value: unknown, fallback: GenerationSettings): GenerationSettings {
+  const source = isRecord(value) ? value : {};
+  return {
+    systemInstructions:
+      typeof source.systemInstructions === "string"
+        ? source.systemInstructions
+        : fallback.systemInstructions,
+    temperature: safeNumber(source.temperature, fallback.temperature, (item) => item >= 0 && item <= 2),
+    topP: safeNumber(source.topP, fallback.topP, (item) => item > 0 && item <= 1),
+    topK: safeNumber(source.topK, fallback.topK, (item) => Number.isInteger(item) && item >= 0),
+    repeatPenalty: safeNumber(source.repeatPenalty, fallback.repeatPenalty, (item) => item >= 0.5 && item <= 2),
+    maxTokens: safeNumber(source.maxTokens, fallback.maxTokens, (item) => Number.isInteger(item) && item >= 1),
+    context: safeNumber(source.context, fallback.context, (item) => Number.isInteger(item) && item >= 256),
+    seed: safeNumber(source.seed, fallback.seed, Number.isInteger),
+    stopSequences: Array.isArray(source.stopSequences)
+      ? source.stopSequences.filter((item): item is string => typeof item === "string")
+      : fallback.stopSequences
+  };
+}
+
 function profiles(value: unknown): Profile[] {
-  return Array.isArray(value) && value.length ? (value as Profile[]) : structuredClone(DEFAULT_PROFILES);
+  const stored = Array.isArray(value) ? value.filter(isRecord) : [];
+  return DEFAULT_PROFILES.map((fallback) => {
+    const source = stored.find((item) => item.id === fallback.id);
+    if (!source) return structuredClone(fallback);
+    return {
+      id: fallback.id,
+      name: typeof source.name === "string" ? source.name : fallback.name,
+      description:
+        typeof source.description === "string" ? source.description : fallback.description,
+      settings: generationSettings(source.settings, fallback.settings)
+    };
+  });
+}
+
+function customProfile(value: unknown): Profile {
+  const source = isRecord(value) ? value : {};
+  return {
+    id: "custom",
+    name: typeof source.name === "string" ? source.name : DEFAULT_CUSTOM_PROFILE.name,
+    description:
+      typeof source.description === "string"
+        ? source.description
+        : DEFAULT_CUSTOM_PROFILE.description,
+    settings: generationSettings(source.settings, DEFAULT_CUSTOM_PROFILE.settings)
+  };
+}
+
+function runtimeConfig(value: unknown): LocalRuntimeConfig {
+  const source = isRecord(value) ? value : {};
+  const fallback = DEFAULT_MIND_STATE.runtime;
+  return {
+    mode: source.mode === "managed" ? "managed" : "external",
+    endpoint: typeof source.endpoint === "string" ? source.endpoint : fallback.endpoint,
+    executablePath:
+      typeof source.executablePath === "string" ? source.executablePath : fallback.executablePath,
+    modelPath: typeof source.modelPath === "string" ? source.modelPath : fallback.modelPath,
+    port: safeNumber(source.port, fallback.port, (item) => Number.isInteger(item) && item >= 1024 && item <= 65535),
+    context: safeNumber(source.context, fallback.context, (item) => Number.isInteger(item) && item >= 256 && item <= 1_048_576),
+    gpuLayers: safeNumber(source.gpuLayers, fallback.gpuLayers, (item) => Number.isInteger(item) && item >= -1 && item <= 999)
+  };
+}
+
+function userPreferences(value: unknown): UserPreferences {
+  const source = isRecord(value) ? value : {};
+  const fallback = DEFAULT_MIND_STATE.preferences;
+  return {
+    onboardingComplete:
+      typeof source.onboardingComplete === "boolean"
+        ? source.onboardingComplete
+        : fallback.onboardingComplete,
+    showBootIntro:
+      typeof source.showBootIntro === "boolean" ? source.showBootIntro : fallback.showBootIntro,
+    retainConversations:
+      typeof source.retainConversations === "boolean"
+        ? source.retainConversations
+        : fallback.retainConversations
+  };
 }
 
 function models(value: unknown): ModelDescriptor[] {
@@ -228,9 +316,7 @@ export function migrateMindState(value: unknown): MindState {
     knowledge: foundKnowledge,
     profiles: profiles(source.profiles),
     selectedProfileId: profileId(source.selectedProfileId ?? source.profile),
-    customProfile: isRecord(source.customProfile)
-      ? (source.customProfile as unknown as Profile)
-      : structuredClone(DEFAULT_CUSTOM_PROFILE),
+    customProfile: customProfile(source.customProfile),
     models: models(source.models),
     selectedModelId: typeof source.selectedModelId === "string" ? source.selectedModelId : null,
     selectedProviderId:
@@ -238,14 +324,8 @@ export function migrateMindState(value: unknown): MindState {
         ? source.selectedProviderId
         : defaultPreference.providerId,
     defaultPreference,
-    runtime: {
-      ...DEFAULT_MIND_STATE.runtime,
-      ...(runtime as Partial<MindState["runtime"]>)
-    },
-    preferences: {
-      ...DEFAULT_MIND_STATE.preferences,
-      ...preferences
-    }
+    runtime: runtimeConfig(runtime),
+    preferences: userPreferences(preferences)
   };
 
   if (!migrated.conversations.some((item) => item.id === migrated.selectedConversationId)) {
@@ -255,10 +335,10 @@ export function migrateMindState(value: unknown): MindState {
     migrated.selectedModelId = migrated.models[0]?.id ?? null;
   }
   if (Object.keys(settings).length && migrated.selectedProfileId === "custom") {
-    migrated.customProfile.settings = {
-      ...DEFAULT_GENERATION_SETTINGS,
-      ...(settings as Partial<typeof DEFAULT_GENERATION_SETTINGS>)
-    };
+    migrated.customProfile.settings = generationSettings(
+      settings,
+      migrated.customProfile.settings
+    );
   }
   return migrated;
 }
