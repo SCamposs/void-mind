@@ -13,7 +13,7 @@ import {
 } from "@void-mind/mind-core";
 
 export const MIND_STORAGE_KEY = "void-mind:state";
-export const MIND_STORAGE_VERSION = 3;
+export const MIND_STORAGE_VERSION = 4;
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
@@ -185,6 +185,24 @@ export function migrateMindState(value: unknown): MindState {
   const preferences = isRecord(source.preferences) ? source.preferences : {};
   const foundWorkspaces = workspaces(source.workspaces);
   const validWorkspaceIds = new Set(foundWorkspaces.map((workspace) => workspace.id));
+  const foundKnowledge = knowledge(source.knowledge, validWorkspaceIds);
+  const knowledgeWorkspaceById = new Map(
+    foundKnowledge.map((item) => [item.id, item.workspaceId])
+  );
+  const validConversations = foundConversations.map((conversation) => {
+    const workspaceId = conversation.workspaceId && validWorkspaceIds.has(conversation.workspaceId)
+      ? conversation.workspaceId
+      : undefined;
+    return {
+      ...conversation,
+      workspaceId,
+      contextKnowledgeIds: workspaceId
+        ? conversation.contextKnowledgeIds?.filter(
+            (id) => knowledgeWorkspaceById.get(id) === workspaceId
+          )
+        : []
+    };
+  });
   const defaultPreference =
     providerPreference(source.defaultPreference) ??
     {
@@ -196,7 +214,7 @@ export function migrateMindState(value: unknown): MindState {
     };
   const migrated: MindState = {
     ...structuredClone(DEFAULT_MIND_STATE),
-    conversations: foundConversations,
+    conversations: validConversations,
     selectedConversationId:
       typeof (source.selectedConversationId ?? source.activeChatId) === "string"
         ? String(source.selectedConversationId ?? source.activeChatId)
@@ -207,7 +225,7 @@ export function migrateMindState(value: unknown): MindState {
       validWorkspaceIds.has(source.selectedWorkspaceId)
         ? source.selectedWorkspaceId
         : null,
-    knowledge: knowledge(source.knowledge, validWorkspaceIds),
+    knowledge: foundKnowledge,
     profiles: profiles(source.profiles),
     selectedProfileId: profileId(source.selectedProfileId ?? source.profile),
     customProfile: isRecord(source.customProfile)

@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useMindStore } from "../../stores/mind-store";
-import { deleteKnowledgeFile } from "../../lib/knowledge-bridge";
+import { deleteKnowledgeFiles } from "../../lib/knowledge-bridge";
 import { SelectControl } from "../../components/SelectControl";
 
 export function WorkspacesScreen() {
@@ -12,6 +12,7 @@ export function WorkspacesScreen() {
   const [instructions, setInstructions] = useState("");
   const [preferenceModelId, setPreferenceModelId] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -29,30 +30,50 @@ export function WorkspacesScreen() {
   };
 
   const save = () => {
-    if (!workspace || !name.trim()) return;
+    if (!workspace) return;
+    if (!name.trim()) {
+      setError("Workspace name cannot be empty.");
+      return;
+    }
     const model = state.models.find((item) => item.id === preferenceModelId);
-    state.updateWorkspace(workspace.id, {
-      name,
-      description,
-      instructions,
-      preference: model ? {
-        providerId: model.providerId,
-        modelId: model.id,
-        reasoningEffort: model.defaultReasoningEffort,
-        serviceTier: model.defaultServiceTier
-      } : undefined
-    });
+    try {
+      state.updateWorkspace(workspace.id, {
+        name,
+        description,
+        instructions,
+        preference: model ? {
+          providerId: model.providerId,
+          modelId: model.id,
+          reasoningEffort: model.defaultReasoningEffort,
+          serviceTier: model.defaultServiceTier
+        } : undefined
+      });
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
   };
 
   const remove = async () => {
     if (!workspace) return;
     setError("");
+    setDeleting(true);
     try {
       const sources = state.knowledge.filter((item) => item.workspaceId === workspace.id);
-      await Promise.all(sources.map((item) => deleteKnowledgeFile(item.id)));
+      const report = await deleteKnowledgeFiles(sources.map((item) => item.id));
+      report.deletedIds.forEach((id) => state.deleteKnowledge(id));
+      if (report.failed.length) {
+        const removed = report.deletedIds.length
+          ? `${report.deletedIds.length} managed ${report.deletedIds.length === 1 ? "copy was" : "copies were"} removed. `
+          : "";
+        setError(`${removed}${report.failed.length} could not be removed, so the workspace was kept. You can retry safely.`);
+        return;
+      }
       state.deleteWorkspace(workspace.id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -94,10 +115,10 @@ export function WorkspacesScreen() {
               <small>Conversations inherit this unless you explicitly choose another model.</small>
             </div>
             <div className="button-row">
-              <button className="primary-button" type="button" onClick={save}>Save changes</button>
+              <button className="primary-button" type="button" disabled={deleting} onClick={save}>Save changes</button>
               {confirmDelete ? (
-                <div className="inline-confirm"><span>Delete this workspace and its imported copies?</span><button type="button" onClick={() => void remove()}>Delete</button><button type="button" onClick={() => setConfirmDelete(false)}>Keep</button></div>
-              ) : <button className="danger-button" type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Delete workspace</button>}
+                <div className="inline-confirm"><span>Delete this workspace and its imported copies?</span><button type="button" disabled={deleting} onClick={() => void remove()}>{deleting ? "Deleting…" : "Delete"}</button><button type="button" disabled={deleting} onClick={() => setConfirmDelete(false)}>Keep</button></div>
+              ) : <button className="danger-button" type="button" disabled={deleting} onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Delete workspace</button>}
             </div>
             {error && <p className="inline-error" role="alert">{error}</p>}
           </div>

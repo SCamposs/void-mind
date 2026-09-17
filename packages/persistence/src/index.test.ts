@@ -86,6 +86,27 @@ describe("versioned persistence", () => {
     expect(state.knowledge).toEqual([]);
   });
 
+  it("repairs orphaned workspace and knowledge references in conversations", () => {
+    const conversation = createConversation("Context");
+    const state = migrateMindState({
+      conversations: [
+        { ...conversation, workspaceId: "missing", contextKnowledgeIds: ["knowledge-1"] },
+        { ...createConversation("Valid"), id: "conversation-2", workspaceId: "workspace-1", contextKnowledgeIds: ["knowledge-1", "knowledge-2"] }
+      ],
+      workspaces: [{ id: "workspace-1", name: "Study" }],
+      knowledge: [
+        { id: "knowledge-1", title: "Notes", sourceFilename: "notes.md", type: "markdown", workspaceId: "workspace-1", managedPath: "knowledge/knowledge-1.md", content: "Notes" },
+        { id: "knowledge-2", title: "Other", sourceFilename: "other.md", type: "markdown", workspaceId: "workspace-2", managedPath: "knowledge/knowledge-2.md", content: "Other" }
+      ]
+    });
+
+    expect(state.conversations[0]).toMatchObject({ workspaceId: undefined, contextKnowledgeIds: [] });
+    expect(state.conversations[1]).toMatchObject({
+      workspaceId: "workspace-1",
+      contextKnowledgeIds: ["knowledge-1"]
+    });
+  });
+
   it("persists conversations and omits them when retention is disabled", () => {
     const storage = new MemoryStorage();
     const conversation = createConversation();
