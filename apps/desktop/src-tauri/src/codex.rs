@@ -773,6 +773,26 @@ fn required_string(value: &Value, key: &str) -> Result<String, String> {
         .ok_or_else(|| "This Codex version returned an unsupported protocol response.".to_string())
 }
 
+fn isolated_conversation_config(neutral_cwd: &Path) -> Value {
+    let mut filesystem = serde_json::Map::new();
+    filesystem.insert(":minimal".into(), Value::String("read".into()));
+    filesystem.insert(
+        neutral_cwd.to_string_lossy().into_owned(),
+        Value::String("read".into()),
+    );
+
+    json!({
+        "default_permissions": "void_mind",
+        "permissions": {
+            "void_mind": {
+                "description": "Isolated general-purpose conversation",
+                "filesystem": filesystem,
+                "network": { "enabled": false }
+            }
+        }
+    })
+}
+
 fn context_instructions(value: Option<String>) -> String {
     match value
         .map(|value| value.trim().to_string())
@@ -1014,7 +1034,7 @@ pub fn codex_thread_start(
             "model": request.model,
             "cwd": client.neutral_cwd,
             "approvalPolicy": "never",
-            "sandbox": "read-only",
+            "config": isolated_conversation_config(&client.neutral_cwd),
             "baseInstructions": GENERAL_INSTRUCTIONS,
             "developerInstructions": context_instructions(request.context_instructions),
             "serviceName": "void_mind",
@@ -1045,7 +1065,7 @@ pub fn codex_thread_resume(
             "model": request.model,
             "cwd": client.neutral_cwd,
             "approvalPolicy": "never",
-            "sandbox": "read-only",
+            "config": isolated_conversation_config(&client.neutral_cwd),
             "baseInstructions": GENERAL_INSTRUCTIONS,
             "developerInstructions": context_instructions(request.context_instructions)
         })),
@@ -1079,7 +1099,6 @@ pub fn codex_turn_start(
             "threadId": request.remote_thread_id,
             "input": [{ "type": "text", "text": message, "text_elements": [] }],
             "approvalPolicy": "never",
-            "sandboxPolicy": { "type": "readOnly", "networkAccess": false },
             "model": request.model,
             "effort": request.reasoning_effort,
             "serviceTierForTurn": request.service_tier
@@ -1132,11 +1151,11 @@ pub fn open_codex_auth_url(app: AppHandle, url: String) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::{
-        error_category, is_codex_name, normalize_notification, resolve_codex_candidate,
-        user_error_message,
+        error_category, is_codex_name, isolated_conversation_config, normalize_notification,
+        resolve_codex_candidate, user_error_message,
     };
     use serde_json::json;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     #[test]
     fn accepts_only_codex_executable_names() {
@@ -1246,6 +1265,22 @@ mod tests {
         assert_eq!(
             user_error_message("invalid json protocol"),
             "This Codex version returned an unsupported protocol response."
+        );
+    }
+
+    #[test]
+    fn isolates_general_conversations_to_minimal_runtime_and_neutral_workspace() {
+        let neutral = PathBuf::from(r"C:\Users\person\AppData\Roaming\VOID Mind\codex-workspace");
+        let config = isolated_conversation_config(&neutral);
+        let filesystem = &config["permissions"]["void_mind"]["filesystem"];
+
+        assert_eq!(config["default_permissions"], "void_mind");
+        assert_eq!(filesystem[":minimal"], "read");
+        assert_eq!(filesystem[neutral.to_string_lossy().as_ref()], "read");
+        assert!(filesystem.get(":root").is_none());
+        assert_eq!(
+            config["permissions"]["void_mind"]["network"]["enabled"],
+            false
         );
     }
 }

@@ -47,6 +47,40 @@ describe("mind store streaming updates", () => {
     expect(state.conversations.find((item) => item.id === second.id)?.messages).toEqual([]);
   });
 
+  it("reuses the selected empty conversation instead of creating another empty draft", () => {
+    const empty = createConversation("New conversation");
+    useMindStore.setState({
+      conversations: [empty],
+      selectedConversationId: empty.id,
+      section: "home",
+      navigationOpen: true
+    });
+
+    const conversationId = useMindStore.getState().createConversation("workspace-ignored");
+
+    const state = useMindStore.getState();
+    expect(conversationId).toBe(empty.id);
+    expect(state.conversations).toEqual([empty]);
+    expect(state.selectedConversationId).toBe(empty.id);
+    expect(state.section).toBe("conversations");
+    expect(state.navigationOpen).toBe(false);
+  });
+
+  it("creates a new conversation after the selected conversation has content", () => {
+    const existing = appendMessage(createConversation("Started"), "user", "Hello");
+    useMindStore.setState({
+      conversations: [existing],
+      selectedConversationId: existing.id
+    });
+
+    const conversationId = useMindStore.getState().createConversation();
+
+    const state = useMindStore.getState();
+    expect(conversationId).not.toBe(existing.id);
+    expect(state.conversations).toHaveLength(2);
+    expect(state.selectedConversationId).toBe(conversationId);
+  });
+
   it("does not silently select a model from another provider when a catalog disappears", () => {
     const makeModel = (providerId: string): ModelDescriptor => ({
       id: `${providerId}:model`,

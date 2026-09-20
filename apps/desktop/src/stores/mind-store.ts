@@ -122,13 +122,28 @@ export const useMindStore = create<MindStore>()((set) => ({
   setSection: (section) => set({ section, navigationOpen: false }),
   setNavigationOpen: (navigationOpen) => set({ navigationOpen }),
   createConversation: (workspaceId) => {
-    const conversation = { ...createConversation(), workspaceId };
-    set((state) => ({
-      conversations: [conversation, ...state.conversations],
-      selectedConversationId: conversation.id,
-      section: "conversations"
-    }));
-    return conversation.id;
+    let conversationId = "";
+    set((state) => {
+      const current = selected(state);
+      if (current?.messages.length === 0) {
+        conversationId = current.id;
+        return {
+          selectedConversationId: current.id,
+          section: "conversations",
+          navigationOpen: false
+        };
+      }
+
+      const conversation = { ...createConversation(), workspaceId };
+      conversationId = conversation.id;
+      return {
+        conversations: [conversation, ...state.conversations],
+        selectedConversationId: conversation.id,
+        section: "conversations",
+        navigationOpen: false
+      };
+    });
+    return conversationId;
   },
   selectConversation: (selectedConversationId) =>
     set({ selectedConversationId, section: "conversations", navigationOpen: false }),
