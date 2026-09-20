@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-\${{ github.ref_name || inputs.tag }}
+  group: release-${{ github.ref_name || inputs.tag }}
   cancel-in-progress: false
 
 jobs:
@@ -23,13 +23,13 @@ jobs:
     name: Validate and package Windows
     runs-on: windows-latest
     env:
-      RELEASE_TAG: \${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
     steps:
       - name: Check out release tag
         uses: actions/checkout@v7
         with:
-          ref: \${{ env.RELEASE_TAG }}
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -88,13 +88,13 @@ jobs:
     name: Validate and package Linux
     runs-on: ubuntu-22.04
     env:
-      RELEASE_TAG: \${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
     steps:
       - name: Check out release tag
         uses: actions/checkout@v7
         with:
-          ref: \${{ env.RELEASE_TAG }}
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Install Linux system dependencies
         run: |
@@ -162,7 +162,7 @@ jobs:
     needs: [windows, linux]
     runs-on: ubuntu-latest
     env:
-      RELEASE_TAG: \${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
     steps:
       - name: Download packaged applications
@@ -175,7 +175,7 @@ jobs:
       - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: \${{ env.RELEASE_TAG }}
+          tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true
-          prerelease: \${{ contains(env.RELEASE_TAG, 'alpha') || contains(env.RELEASE_TAG, 'beta') || contains(env.RELEASE_TAG, 'rc') }}
+          prerelease: ${{ contains(env.RELEASE_TAG, 'alpha') || contains(env.RELEASE_TAG, 'beta') || contains(env.RELEASE_TAG, 'rc') }}
           files: release-assets/*
