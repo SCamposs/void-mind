@@ -1,0 +1,181 @@
+name: Desktop release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing version tag to package (for example v0.2.0-alpha.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-\${{ github.ref_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Validate and package Windows
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: \${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+        with:
+          ref: \${{ env.RELEASE_TAG }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Set up stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate application
+        run: |
+          npm run lint
+          npm run typecheck
+          npm run test
+          npm run build
+
+      - name: Build NSIS installer
+        working-directory: apps/desktop
+        run: npm run tauri -- build --bundles nsis
+
+      - name: Prepare release assets
+        shell: pwsh
+        run: |
+          $source = Get-ChildItem -Path "apps/desktop/src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe" -File |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+          if (-not $source) {
+            throw "Tauri did not produce an NSIS setup executable."
+          }
+
+          New-Item -ItemType Directory -Path "release-assets" -Force | Out-Null
+          $installer = Join-Path "release-assets" "VOID-Mind-Windows-x64-setup.exe"
+          Copy-Item -LiteralPath $source.FullName -Destination $installer
+          $hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  VOID-Mind-Windows-x64-setup.exe" |
+            Set-Content -LiteralPath "$installer.sha256" -Encoding ascii
+
+      - name: Preserve workflow artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: VOID-Mind-Windows-x64
+          path: release-assets/*
+          if-no-files-found: error
+
+  linux:
+    name: Validate and package Linux
+    runs-on: ubuntu-22.04
+    env:
+      RELEASE_TAG: \${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+        with:
+          ref: \${{ env.RELEASE_TAG }}
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Set up stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate application
+        run: |
+          npm run lint
+          npm run typecheck
+          npm run test
+          npm run build
+
+      - name: Build Linux packages
+        working-directory: apps/desktop
+        run: npm run tauri -- build --bundles deb,appimage
+
+      - name: Prepare release assets
+        run: |
+          deb_source="$(find apps/desktop/src-tauri/target/release/bundle/deb -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          appimage_source="$(find apps/desktop/src-tauri/target/release/bundle/appimage -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+
+          test -n "$deb_source"
+          test -n "$appimage_source"
+
+          mkdir -p release-assets
+          cp "$deb_source" release-assets/VOID-Mind-Linux-x64.deb
+          cp "$appimage_source" release-assets/VOID-Mind-Linux-x64.AppImage
+          chmod +x release-assets/VOID-Mind-Linux-x64.AppImage
+          cd release-assets
+          sha256sum VOID-Mind-Linux-x64.deb > VOID-Mind-Linux-x64.deb.sha256
+          sha256sum VOID-Mind-Linux-x64.AppImage > VOID-Mind-Linux-x64.AppImage.sha256
+
+      - name: Preserve workflow artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: VOID-Mind-Linux-x64
+          path: release-assets/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: \${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+    steps:
+      - name: Download packaged applications
+        uses: actions/download-artifact@v8
+        with:
+          pattern: VOID-Mind-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: \${{ env.RELEASE_TAG }}
+          generate_release_notes: true
+          prerelease: \${{ contains(env.RELEASE_TAG, 'alpha') || contains(env.RELEASE_TAG, 'beta') || contains(env.RELEASE_TAG, 'rc') }}
+          files: release-assets/*
