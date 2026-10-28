@@ -21,6 +21,6 @@ The visual checkpoint passed ESLint, TypeScript, production Vite build, 37 JavaS
 - Validate normal non-elevated ChatGPT login, streaming, cancellation, logout, restart and conversation isolation. See CODEX_PROVIDER.md for the elevated Windows sandbox limitation.
 - Complete native installer styling and inspect every setup/uninstall page and custom window action.
 - Confirm final responsive layout, keyboard focus and reduced-motion behavior interactively.
-- Reconcile every requirement with the original environment goal document before declaring completion. That document is absent from the current checkout; prior session content must be recovered for the audit.
+- Reconcile every requirement with VOID_MIND_ENVIRONMENT_GOAL.md before declaring completion. The original 2,063 lines were recovered from the numbered file-read outputs in this task's September 2 session and restored at the repository root. The source is the original document, not a reconstructed requirement summary.
 - Publish and independently verify release assets after the remaining gates pass. Version alpha.1 is prepared, not yet published.
 - Keep the sibling VOID repository read-only. The design transfer is ready to plan, but application chrome and installer acceptance should precede implementation there.
