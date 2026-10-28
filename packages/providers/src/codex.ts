@@ -245,6 +245,7 @@ export class CodexProvider implements MindProvider {
       if (!request.remoteThreadId) {
         yield { type: "binding", remoteThreadId: binding.remoteThreadId };
       }
+      throwIfAborted(signal);
       const message = [...request.messages].reverse().find((item) => item.role === "user");
       if (!message) throw new Error("A user message is required.");
       const turn = await this.bridge.startTurn({
@@ -254,8 +255,11 @@ export class CodexProvider implements MindProvider {
         reasoningEffort: request.reasoningEffort,
         serviceTier: request.serviceTier
       });
-      throwIfAborted(signal);
       this.activeTurn = { remoteThreadId: binding.remoteThreadId, turnId: turn.turnId };
+      if (signal?.aborted) {
+        await this.bridge.interrupt(this.activeTurn);
+        throw abortReason(signal);
+      }
       abort = () => this.cancel();
       signal?.addEventListener("abort", abort, { once: true });
       yield { type: "start", turnId: turn.turnId };

@@ -73,6 +73,52 @@ const request = {
 };
 
 describe("Codex provider", () => {
+  it("does not start a turn when stopped after thread binding", async () => {
+    const { bridge } = createBridge();
+    const controller = new AbortController();
+    const iterator = new CodexProvider(bridge).generate(request, controller.signal);
+    await expect(iterator.next()).resolves.toMatchObject({ value: { type: "binding" } });
+    controller.abort();
+    await expect(iterator.next()).rejects.toMatchObject({ name: "AbortError" });
+    expect(bridge.startTurn).not.toHaveBeenCalled();
+  });
+
+  it("interrupts a turn that finishes starting after Stop was requested", async () => {
+    const { bridge } = createBridge();
+    const controller = new AbortController();
+    let resolveTurn!: (turn: { turnId: string }) => void;
+    bridge.startTurn = vi.fn(() => new Promise<{ turnId: string }>((resolve) => { resolveTurn = resolve; }));
+    const iterator = new CodexProvider(bridge).generate(request, controller.signal);
+    await iterator.next();
+    const pending = iterator.next();
+    await vi.waitFor(() => expect(bridge.startTurn).toHaveBeenCalled());
+    controller.abort();
+    resolveTurn({ turnId: "late-turn" });
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(bridge.interrupt).toHaveBeenCalledWith({ remoteThreadId: "thread-1", turnId: "late-turn" });
+  });
+
+  it("resumes the existing remote thread and ignores unrelated turn events", async () => {
+    const { bridge, emit } = createBridge();
+    const events: ProviderEvent[] = [];
+    const consume = (async () => {
+      for await (const event of new CodexProvider(bridge).generate({ ...request, remoteThreadId: "existing-thread" })) events.push(event);
+    })();
+    await vi.waitFor(() => expect(bridge.startTurn).toHaveBeenCalled());
+    emit({ type: "assistantDelta", threadId: "other-thread", turnId: "turn-1", itemId: "other", delta: "Wrong thread" });
+    emit({ type: "assistantDelta", threadId: "existing-thread", turnId: "old-turn", itemId: "old", delta: "Wrong turn" });
+    emit({ type: "assistantDelta", threadId: "existing-thread", turnId: "turn-1", itemId: "current", delta: "Continued" });
+    emit({ type: "turnCompleted", threadId: "existing-thread", turnId: "turn-1", status: "completed" });
+    await consume;
+    expect(bridge.startThread).not.toHaveBeenCalled();
+    expect(bridge.resumeThread).toHaveBeenCalledWith(expect.objectContaining({ remoteThreadId: "existing-thread" }));
+    expect(events).toEqual([
+      { type: "start", turnId: "turn-1" },
+      { type: "token", content: "Continued" },
+      { type: "done", finishReason: "completed" }
+    ]);
+  });
+
   it("normalizes live model metadata without a hardcoded catalog", () => {
     expect(normalizeCodexModels([runtimeModel])).toEqual([
       expect.objectContaining({
