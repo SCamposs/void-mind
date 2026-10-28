@@ -9,7 +9,7 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 | 3 | Source reviewed | No browser token/cookie collection in integration. |
 | 4 | Partial | PATH/native npm-shim discovery exists; missing/executable permission/platform failure cases need stronger lifecycle tests. |
 | 5 | Partial | Manager starts/reuses/stops children; crash/shutdown/process-launch integration tests incomplete. |
-| 6 | Source reviewed | Central request IDs, pending map, reader and notification normalizer in codex.rs. |
+| 6 | Source + tests | Central IDs/pending map/reader; direct tests cover out-of-order replies, duplicate/unknown IDs, sanitized errors and failure-drain behavior. |
 | 7 | Observed earlier | Native app showed connected account; full revalidation pending. |
 | 8 | Partial | Official account/login/start implemented; real login flow not exercised. |
 | 9 | Partial | Browser/device-code branches implemented; browser failure/cancel tests pass; actual authentication pending. |
@@ -44,7 +44,7 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 | 38 | Partial | Shortcuts/drawers/focus implemented; full keyboard walkthrough pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Verified checks | 43 JS tests, 12 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
+| 41 | Verified checks | 43 JS tests, 14 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
 | 42 | Partial | Vite build passes; current NSIS rebuild must finish; Linux release unverified. |
 | 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
 | 44 | Verified check | Diff checks pass before incremental commits. |

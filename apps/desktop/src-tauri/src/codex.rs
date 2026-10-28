@@ -458,17 +458,7 @@ fn spawn_reader(
                 reject_server_request(&stdin, &message);
                 continue;
             }
-            if let Some(id) = message.get("id").and_then(Value::as_u64) {
-                let response = if let Some(error) = message.get("error") {
-                    Err(user_error_message(&protocol_error(error)))
-                } else {
-                    Ok(message.get("result").cloned().unwrap_or(Value::Null))
-                };
-                if let Ok(mut requests) = pending.lock() {
-                    if let Some(sender) = requests.remove(&id) {
-                        let _ = sender.send(response);
-                    }
-                }
+            if dispatch_response(&pending, &message) {
                 continue;
             }
             if let Some(event) = normalize_notification(&message) {
@@ -489,6 +479,26 @@ fn spawn_reader(
             }),
         );
     });
+}
+
+fn dispatch_response(pending: &PendingMap, message: &Value) -> bool {
+    if message.get("method").is_some() {
+        return false;
+    }
+    let Some(id) = message.get("id").and_then(Value::as_u64) else {
+        return false;
+    };
+    let response = if let Some(error) = message.get("error") {
+        Err(user_error_message(&protocol_error(error)))
+    } else {
+        Ok(message.get("result").cloned().unwrap_or(Value::Null))
+    };
+    if let Ok(mut requests) = pending.lock() {
+        if let Some(sender) = requests.remove(&id) {
+            let _ = sender.send(response);
+        }
+    }
+    true
 }
 
 fn reject_server_request(stdin: &Arc<Mutex<ChildStdin>>, request: &Value) {
@@ -1156,6 +1166,66 @@ mod tests {
     };
     use serde_json::json;
     use std::path::{Path, PathBuf};
+
+    #[test]
+    fn correlates_out_of_order_responses_without_consuming_other_requests() {
+        use super::{dispatch_response, PendingMap};
+        use std::sync::{mpsc, Arc, Mutex};
+        let pending: PendingMap = Arc::new(Mutex::new(Default::default()));
+        let (first, first_result) = mpsc::sync_channel(1);
+        let (second, second_result) = mpsc::sync_channel(1);
+        pending.lock().unwrap().insert(1, first);
+        pending.lock().unwrap().insert(2, second);
+        assert!(!dispatch_response(
+            &pending,
+            &json!({"method":"account/updated", "id":1})
+        ));
+        assert!(dispatch_response(
+            &pending,
+            &json!({"id":99,"result":"stale"})
+        ));
+        assert!(dispatch_response(
+            &pending,
+            &json!({"id":2,"result":"second"})
+        ));
+        assert_eq!(second_result.recv().unwrap().unwrap(), json!("second"));
+        assert!(first_result.try_recv().is_err());
+        assert!(dispatch_response(
+            &pending,
+            &json!({"id":2,"result":"duplicate"})
+        ));
+        dispatch_response(
+            &pending,
+            &json!({"id":1,"error":{"message":"401 unauthorized secret-detail"}}),
+        );
+        assert_eq!(
+            first_result.recv().unwrap().unwrap_err(),
+            "Connect your ChatGPT account to continue."
+        );
+        assert!(pending.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn runtime_failure_releases_every_pending_request() {
+        use super::{fail_pending, PendingMap};
+        use std::sync::{mpsc, Arc, Mutex};
+        let pending: PendingMap = Arc::new(Mutex::new(Default::default()));
+        let mut receivers = Vec::new();
+        for id in 1..=3 {
+            let (sender, receiver) = mpsc::sync_channel(1);
+            pending.lock().unwrap().insert(id, sender);
+            receivers.push(receiver);
+        }
+        fail_pending(&pending, "The Codex runtime stopped.");
+        for receiver in receivers {
+            assert_eq!(
+                receiver.try_recv().unwrap().unwrap_err(),
+                "The Codex runtime stopped."
+            );
+        }
+        assert!(pending.lock().unwrap().is_empty());
+        fail_pending(&pending, "The Codex runtime stopped.");
+    }
 
     #[test]
     fn accepts_only_codex_executable_names() {

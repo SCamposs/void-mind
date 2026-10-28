@@ -20,6 +20,8 @@ Knowledge validation additionally covers the exact 512 KB boundary, oversized in
 
 Codex provider regression coverage includes Stop after thread binding, Stop while turn creation is pending, existing-thread resume, and filtering events from other threads/turns. A turn returned after cancellation is explicitly interrupted before the stream exits. These bridge tests verify orchestration, not real account inference or operating-system sandbox isolation.
 
+Native request dispatch now has direct regression coverage for out-of-order replies, unknown/duplicate IDs, excluding server requests from response correlation, sanitized protocol errors and releasing all pending requests on runtime failure. All 14 Rust tests pass. These tests exercise the dispatcher and failure-drain path, not an actual child crash.
+
 Workspace detail now lists its conversations and offers direct creation. Reusing an empty draft in a different workspace updates ownership and clears prior explicit provider/source context, without creating a duplicate empty conversation. Store regression coverage verifies that transition.
 
 Explicit conversation context is assembled centrally with a 64,000-character combined budget. Tests cover workspace ownership, selected/ready source filtering, missing workspace, exact budget boundary and overflow rejection. Overflow is reported before provider generation begins, without silent truncation. The conversation history toggle also follows the responsive-only visibility and scrim rule used by primary navigation.
