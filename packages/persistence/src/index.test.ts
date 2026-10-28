@@ -89,7 +89,7 @@ describe("versioned persistence", () => {
     expect(state.selectedConversationId).toBe("chat-1");
     expect(state.runtime.endpoint).toBe("http://localhost:9090");
     expect(state.workspaces).toEqual([]);
-    expect(state.defaultPreference.providerId).toBe("openai-codex");
+    expect(state.defaultPreference.providerId).toBe("openai-chatgpt");
   });
 
   it("persists workspace ownership, instructions, and explicit knowledge context", () => {

@@ -29,6 +29,7 @@ import {
 } from "@void-mind/persistence";
 import type {
   CodexAccountState,
+  ConnectionStatus,
   CodexRuntimeStatus,
   ProviderHealth
 } from "@void-mind/providers";
@@ -52,6 +53,10 @@ type MindActions = {
   codexStatus: CodexRuntimeStatus | null;
   codexAccount: CodexAccountState | null;
   codexLogin: CodexLoginState;
+  connections: ConnectionStatus | null;
+  chatgptLogin: CodexLoginState;
+  setConnections(status: ConnectionStatus | null): void;
+  setChatGPTLogin(login: CodexLoginState): void;
   queuedGenerationId: string | null;
   storageHealthy: boolean;
   setSection(section: AppSection): void;
@@ -117,6 +122,10 @@ export const useMindStore = create<MindStore>()((set) => ({
   codexStatus: null,
   codexAccount: null,
   codexLogin: { state: "idle" },
+  connections: null,
+  chatgptLogin: { state: "idle" },
+  setConnections: (connections) => set({ connections }),
+  setChatGPTLogin: (chatgptLogin) => set({ chatgptLogin }),
   queuedGenerationId: null,
   storageHealthy: true,
   setSection: (section) => set({ section, navigationOpen: false }),

@@ -1,3 +1,4 @@
+import { PlanWelcome } from "../components/PlanWelcome";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { BootIntro } from "../components/BootIntro";
@@ -11,12 +12,28 @@ import { WorkspacesScreen } from "../features/workspaces/WorkspacesScreen";
 import { codexBridge } from "../lib/codex-bridge";
 import { normalizeCodexModels } from "@void-mind/providers";
 import { useMindStore } from "../stores/mind-store";
+import { listen } from "@tauri-apps/api/event";
+import { refreshConnections } from "../lib/connections-bridge";
+import { connectionError } from "../lib/use-chatgpt-login";
 
 export function App() {
   const section = useMindStore((state) => state.section);
   const showBootIntro = useMindStore((state) => state.preferences.showBootIntro);
   const onboardingComplete = useMindStore((state) => state.preferences.onboardingComplete);
   const [bootVisible, setBootVisible] = useState(showBootIntro);
+
+  useEffect(() => {
+    let active = true;
+    let stop: (() => void) | undefined;
+    void listen<{ success: boolean; error?: string }>("void-mind://connection-login", ({ payload }) => {
+      if (!active) return;
+      if (payload.success) useMindStore.getState().setDefaultPreference({ providerId: "openai-chatgpt" });
+      useMindStore.getState().setChatGPTLogin(payload.success ? { state: "success", message: "ChatGPT connected to VOID Mind." } : { state: "error", message: payload.error ?? "Sign-in did not complete." });
+      void refreshConnections().catch((error) => useMindStore.getState().setChatGPTLogin({ state: "error", message: connectionError(error) }));
+    }).then((unsubscribe) => { if (active) stop = unsubscribe; else unsubscribe(); }).catch(() => undefined);
+    void refreshConnections().catch(() => undefined);
+    return () => { active = false; stop?.(); };
+  }, []);
 
   const finishBoot = useCallback(() => {
     setBootVisible(false);
@@ -106,6 +123,7 @@ export function App() {
       </div>
       {bootVisible && <BootIntro onSkip={finishBoot} />}
       {!bootVisible && !onboardingComplete && <OnboardingScreen />}
+      {!bootVisible && <PlanWelcome />}
     </>
   );
 }

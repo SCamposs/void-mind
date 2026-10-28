@@ -215,3 +215,7 @@ The exact parent VOID path is traced, filled with glacial white, and never geome
 - **Don't** center the standalone product around a giant Orbit orb.
 - **Don't** hide controls or state so deeply that minimalism becomes invisibility.
 - **Don't** add fake statistics, workspaces, knowledge indexing, memory, or provider status.
+
+## Control consistency checkpoint
+
+Source-owned `Controls.tsx` centralizes Base UI Button, Input, Number Field, Checkbox, Switch, Radio Group, Collapsible and Scroll Area; `SelectControl.tsx` owns Select. All application controls use these wrappers. Dialog owns quick navigation and first-use ChatGPT-plan confirmation. Scrollbars use a black track, restrained glacial-neutral thumb, and clear hover/drag states; browser-managed editing and code regions receive the same fallback styling. Native file selection and NSIS retain the previously approved operating-system control boundary.

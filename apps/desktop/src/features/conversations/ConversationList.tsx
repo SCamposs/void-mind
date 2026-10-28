@@ -1,3 +1,4 @@
+import { Button, Input } from "../../components/Controls";
 import { Check, Edit3, Pin, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { searchConversations, type Conversation } from "@void-mind/mind-core";
@@ -54,14 +55,14 @@ export function ConversationList() {
 
   return (
     <aside className="conversation-list" aria-label="Conversation history">
-      <button className="new-conversation" type="button" onClick={() => create(currentWorkspaceId ?? selectedWorkspaceId ?? undefined)}>
+      <Button className="new-conversation" type="button" onClick={() => create(currentWorkspaceId ?? selectedWorkspaceId ?? undefined)}>
         <Plus size={16} />
         New conversation
-      </button>
+      </Button>
       <label className="search-field">
         <Search size={15} aria-hidden="true" />
         <span className="sr-only">Search conversations</span>
-        <input
+        <Input
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -86,50 +87,50 @@ export function ConversationList() {
                     commitRename();
                   }}
                 >
-                  <input
+                  <Input
                     autoFocus
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     aria-label="Conversation name"
                   />
-                  <button type="submit" aria-label="Save name"><Check size={14} /></button>
-                  <button type="button" onClick={() => setEditingId(null)} aria-label="Cancel rename">
+                  <Button type="submit" aria-label="Save name"><Check size={14} /></Button>
+                  <Button type="button" onClick={() => setEditingId(null)} aria-label="Cancel rename">
                     <X size={14} />
-                  </button>
+                  </Button>
                 </form>
               ) : deletingId === conversation.id ? (
                 <div className="inline-confirm">
                   <span>Delete?</span>
-                  <button type="button" onClick={() => remove(conversation.id)}>Delete</button>
-                  <button type="button" onClick={() => setDeletingId(null)}>Keep</button>
+                  <Button type="button" onClick={() => remove(conversation.id)}>Delete</Button>
+                  <Button type="button" onClick={() => setDeletingId(null)}>Keep</Button>
                 </div>
               ) : (
                 <>
-                  <button
+                  <Button
                     className="conversation-select"
                     type="button"
                     onClick={() => select(conversation.id)}
                   >
                     <strong>{conversation.title}</strong>
                     <span>{conversation.messages.at(-1)?.content || "Empty conversation"}</span>
-                  </button>
+                  </Button>
                   <div className="row-actions">
-                    <button
+                    <Button
                       type="button"
                       className={conversation.pinned ? "is-pinned" : ""}
                       onClick={() => pin(conversation.id, !conversation.pinned)}
                       aria-label={conversation.pinned ? `Unpin ${conversation.title}` : `Pin ${conversation.title}`}
                     >
                       <Pin size={13} fill={conversation.pinned ? "currentColor" : "none"} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => beginRename(conversation.id, conversation.title)}
                       aria-label={`Rename ${conversation.title}`}
                     >
                       <Edit3 size={13} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => {
                         setDeletingId(conversation.id);
@@ -138,7 +139,7 @@ export function ConversationList() {
                       aria-label={`Delete ${conversation.title}`}
                     >
                       <Trash2 size={13} />
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}

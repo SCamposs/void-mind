@@ -1,3 +1,4 @@
+import { Button, Textarea } from "../../components/Controls";
 import { Check, Copy, Edit3, RefreshCw, X } from "lucide-react";
 import { useState } from "react";
 import type { MindMessage } from "@void-mind/mind-core";
@@ -45,7 +46,7 @@ export function MessageItem({
           >
             <label>
               <span className="sr-only">Edit message</span>
-              <textarea
+              <Textarea
                 autoFocus
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
@@ -53,12 +54,12 @@ export function MessageItem({
               />
             </label>
             <div>
-              <button className="text-button" type="submit">
+              <Button className="text-button" type="submit">
                 <Check size={14} /> Save and continue
-              </button>
-              <button className="text-button" type="button" onClick={() => setEditing(false)}>
+              </Button>
+              <Button className="text-button" type="button" onClick={() => setEditing(false)}>
                 <X size={14} /> Cancel
-              </button>
+              </Button>
             </div>
           </form>
         ) : (
@@ -74,12 +75,12 @@ export function MessageItem({
             {message.status === "stopped" && <p className="message-status">Generation stopped.</p>}
             {message.status === "error" && <p className="message-status">Response interrupted.</p>}
             <div className="message-actions">
-              <button type="button" onClick={copy} aria-label="Copy message">
+              <Button type="button" onClick={copy} aria-label="Copy message">
                 {copied ? <Check size={14} /> : <Copy size={14} />}
                 {copied ? "Copied" : "Copy"}
-              </button>
+              </Button>
               {message.role === "user" && (
-                <button
+                <Button
                   type="button"
                   disabled={disabled}
                   onClick={() => {
@@ -88,12 +89,12 @@ export function MessageItem({
                   }}
                 >
                   <Edit3 size={14} /> Edit
-                </button>
+                </Button>
               )}
               {canRegenerate && (
-                <button type="button" disabled={disabled} onClick={onRegenerate}>
+                <Button type="button" disabled={disabled} onClick={onRegenerate}>
                   <RefreshCw size={14} /> Regenerate
-                </button>
+                </Button>
               )}
             </div>
           </>

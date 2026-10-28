@@ -1,3 +1,5 @@
+import { Dialog } from "@base-ui/react/dialog";
+import { Button, Input } from "./Controls";
 import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMindStore, type AppSection } from "../stores/mind-store";
@@ -15,9 +17,6 @@ export function QuickSwitcher() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
-  const dialog = useRef<HTMLElement>(null);
-  const previousFocus = useRef<HTMLElement | null>(null);
-  const wasOpen = useRef(false);
   const conversations = useMindStore((state) => state.conversations);
   const createConversation = useMindStore((state) => state.createConversation);
   const selectedWorkspaceId = useMindStore((state) => state.selectedWorkspaceId);
@@ -34,6 +33,7 @@ export function QuickSwitcher() {
         event.preventDefault();
         setOpen((value) => !value);
       } else if (event.key.toLowerCase() === "n") {
+        setOpen(false);
         event.preventDefault();
         createConversation(selectedWorkspaceId ?? undefined);
       } else if (event.key === ",") {
@@ -45,41 +45,6 @@ export function QuickSwitcher() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [createConversation, selectedWorkspaceId, setSection]);
 
-  useEffect(() => {
-    const shell = document.querySelector<HTMLElement>(".app-shell");
-    const background = shell
-      ? [...shell.children].filter((element) => !element.classList.contains("switcher-backdrop")) as HTMLElement[]
-      : [];
-    if (open) {
-      previousFocus.current = document.activeElement as HTMLElement | null;
-      background.forEach((element) => { element.inert = true; });
-      window.setTimeout(() => input.current?.focus(), 0);
-    } else {
-      setQuery("");
-      background.forEach((element) => { element.inert = false; });
-      if (wasOpen.current) previousFocus.current?.focus();
-    }
-    wasOpen.current = open;
-    return () => background.forEach((element) => { element.inert = false; });
-  }, [open]);
-
-  const trapFocus = (event: React.KeyboardEvent) => {
-    if (event.key !== "Tab") return;
-    const focusable = dialog.current?.querySelectorAll<HTMLElement>(
-      "button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])"
-    );
-    if (!focusable?.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
   const normalized = query.trim().toLocaleLowerCase();
   const matchingDestinations = destinations.filter((item) => item.label.toLocaleLowerCase().includes(normalized));
   const matchingConversations = useMemo(
@@ -87,18 +52,18 @@ export function QuickSwitcher() {
     [conversations, normalized]
   );
 
-  if (!open) return null;
   return (
-    <div className="switcher-backdrop" role="presentation" onMouseDown={() => setOpen(false)}>
-      <section ref={dialog} className="quick-switcher" role="dialog" aria-modal="true" aria-label="Quick switcher" onKeyDown={trapFocus} onMouseDown={(event) => event.stopPropagation()}>
-        <label><Search size={16} /><input ref={input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Go to…" /><button type="button" onClick={() => setOpen(false)} aria-label="Close"><X size={15} /></button></label>
+    <Dialog.Root open={open} onOpenChange={setOpen}><Dialog.Portal>
+      <Dialog.Backdrop className="switcher-backdrop" />
+      <Dialog.Popup className="quick-switcher" initialFocus={input} aria-label="Quick switcher">
+        <label><Search size={16} /><Input ref={input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Go to…" /><Button type="button" onClick={() => setOpen(false)} aria-label="Close"><X size={15} /></Button></label>
         <div className="switcher-results">
           <span>Navigate</span>
-          {matchingDestinations.map((item) => <button type="button" key={item.id} onClick={() => { setSection(item.id); setOpen(false); }}>{item.label}</button>)}
+          {matchingDestinations.map((item) => <Button type="button" key={item.id} onClick={() => { setSection(item.id); setOpen(false); }}>{item.label}</Button>)}
           {matchingConversations.length > 0 && <span>Conversations</span>}
-          {matchingConversations.map((item) => <button type="button" key={item.id} onClick={() => { selectConversation(item.id); setOpen(false); }}>{item.title}</button>)}
+          {matchingConversations.map((item) => <Button type="button" key={item.id} onClick={() => { selectConversation(item.id); setOpen(false); }}>{item.title}</Button>)}
         </div>
-      </section>
-    </div>
+      </Dialog.Popup>
+    </Dialog.Portal></Dialog.Root>
   );
 }

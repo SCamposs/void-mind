@@ -37,9 +37,9 @@ export const DEFAULT_MIND_STATE: MindState = {
   customProfile: structuredClone(DEFAULT_CUSTOM_PROFILE),
   models: [],
   selectedModelId: null,
-  selectedProviderId: "openai-codex",
+  selectedProviderId: "openai-chatgpt",
   defaultPreference: {
-    providerId: "openai-codex"
+    providerId: "openai-chatgpt"
   },
   runtime: {
     mode: "external",

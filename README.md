@@ -107,3 +107,7 @@ Installing the optional dependencies does not start training. Generated model fi
 - model discovery does not claim a VOID-trained A1 without a verified artifact and manifest
 
 VOID Mind is an early standalone foundation, not the completed future platform.
+
+### Connection update
+
+Continue with ChatGPT now has a direct official Sign in with ChatGPT plan-usage implementation; this path does not require a separate Codex installation. Intelligence also offers an optional OpenAI API key. Both use the native system credential store and separate model catalogs. Fresh consent and real direct inference are still pending manual QA; existing Codex account inference remains a separate, previously exercised path. See [Connections](docs/CONNECTIONS.md).

@@ -1,3 +1,4 @@
+import { Button } from "./Controls";
 import {
   BookOpen,
   Brain,
@@ -35,6 +36,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const setSection = useMindStore((state) => state.setSection);
   const setOpen = useMindStore((state) => state.setNavigationOpen);
   const account = useMindStore((state) => state.codexAccount);
+  const connections = useMindStore((state) => state.connections);
   const selectedProviderId = useMindStore((state) => state.selectedProviderId);
   const compact = useMediaQuery("(max-width: 780px)");
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -75,7 +77,7 @@ export function AppShell({ children }: PropsWithChildren) {
     <div className="app-shell">
       <header className="app-header">
         <div className="titlebar-drag-region" data-tauri-drag-region aria-hidden="true" />
-        <button
+        <Button
           ref={menuButton}
           className="icon-button mobile-menu"
           type="button"
@@ -85,8 +87,8 @@ export function AppShell({ children }: PropsWithChildren) {
           aria-controls="primary-navigation"
         >
           {open ? <X size={18} /> : <Menu size={18} />}
-        </button>
-        <button
+        </Button>
+        <Button
           className="brand-button"
           type="button"
           onClick={() => setSection("home")}
@@ -94,12 +96,12 @@ export function AppShell({ children }: PropsWithChildren) {
         >
           <VoidMark />
           <span>VOID <strong>MIND</strong></span>
-        </button>
+        </Button>
         <div className="app-header-actions">
           <span className="privacy-note">
             {selectedProviderId === "openai-codex"
               ? account?.state === "connected" ? "ChatGPT connected" : "ChatGPT not connected"
-              : "Local runtime"}
+              : selectedProviderId === "openai-chatgpt" ? connections?.accounts.some((a) => a.id === connections.activeAccountId && a.connected && a.planAuthorized) ? "ChatGPT connected" : "ChatGPT not connected" : selectedProviderId === "openai-api" ? connections?.apiConnected ? "OpenAI API connected" : "API not connected" : "Local runtime"}
           </span>
           <WindowControls />
         </div>
@@ -116,7 +118,7 @@ export function AppShell({ children }: PropsWithChildren) {
         >
           <div className="nav-items">
             {items.map(({ id, label, icon: Icon }) => (
-              <button
+              <Button
                 key={id}
                 type="button"
                 className={section === id ? "is-active" : ""}
@@ -125,12 +127,12 @@ export function AppShell({ children }: PropsWithChildren) {
               >
                 <Icon size={17} strokeWidth={1.7} />
                 <span>{label}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </nav>
         {compact && open && (
-          <button
+          <Button
             type="button"
             className="nav-scrim"
             aria-label="Close navigation"

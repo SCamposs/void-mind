@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod codex;
+mod connections;
 mod knowledge;
 mod runtime;
 
@@ -10,11 +11,28 @@ use tauri::Manager;
 
 fn main() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(RuntimeManager::default())
         .manage(CodexRuntimeManager::default())
+        .manage(std::sync::Arc::new(connections::Connections::default()))
         .invoke_handler(tauri::generate_handler![
+            connections::connections_status,
+            connections::connection_usage,
+            connections::connection_welcome_seen,
+            connections::connection_select,
+            connections::connection_login,
+            connections::connection_login_cancel,
+            connections::connection_api_save,
+            connections::connection_disconnect,
+            connections::connection_models,
+            connections::connection_generate,
+            connections::connection_cancel,
             runtime::validate_runtime,
             runtime::start_runtime,
             runtime::runtime_status,

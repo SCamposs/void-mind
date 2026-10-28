@@ -10,7 +10,7 @@ VOID Mind is for people who want a focused desktop space for natural conversatio
 
 ## Product Purpose
 
-VOID Mind is a standalone, general-purpose intelligence environment. ChatGPT through the official Codex runtime is the primary experience; local llama.cpp remains a supported secondary provider. The product is not an IDE or agent dashboard.
+VOID Mind is a standalone, general-purpose intelligence environment. ChatGPT through official Sign in with ChatGPT plan authorization is the primary connection; an OpenAI API key is a discreet alternative. The Codex runtime remains available for existing conversations; local llama.cpp remains a supported secondary provider. The product is not an IDE or agent dashboard.
 
 ## Brand Personality
 
@@ -51,7 +51,7 @@ The implemented target is WCAG 2.2 AA for text contrast, keyboard access, semant
 | --- | --- | --- |
 | Home | Implemented | Luminous entry composer, recent conversations, workspaces, and provider state |
 | Conversations | Implemented | Persisted management, Codex thread binding, streaming, interruption, and context inspection |
-| Intelligence | Implemented | ChatGPT account, live Codex catalog, adaptive reasoning/tier controls, and local runtime |
+| Intelligence | Implemented; direct authentication QA pending | Primary ChatGPT sign-in, discreet OpenAI API key, separate account/catalog handling, legacy Codex and local runtime |
 | Settings | Implemented | Profiles, advanced generation controls, retention, and intro preference |
 | Workspaces | Implemented | CRUD, instructions, conversation grouping, and inherited provider preference |
 | Knowledge | Implemented first layer | Explicit Markdown/text imports, managed copies, previews, and conversation selection |
@@ -67,3 +67,7 @@ Knowledge is explicit material supplied by the user. Memory is information delib
 The Codex provider is intentionally conversation-only: read-only sandbox, approvals disabled, neutral workspace, no exposed tool workflow, and no autonomous commands. Knowledge is transmitted only when visibly selected for a conversation using a remote provider.
 
 Orbit remains part of the broader VOID ecosystem and may become the presence of future Mind Mini. It is not the primary standalone interface.
+
+## Shared controls
+
+All app-authored buttons, text fields, multiline fields, numbers, checkboxes, switches, selectors, segmented choices and disclosures are composed from source-owned wrappers around Base UI. Scroll Area owns primary page/conversation scrolling; text editors, code blocks and popup lists use the same restrained native scrollbar fallback. Quick switcher and the first ChatGPT-plan confirmation use Base UI Dialog for focus containment and dismissal. Typography and colors remain the VOID tokens. Native Tauri file dialogs and installer controls remain platform-owned, as previously approved.

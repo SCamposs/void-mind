@@ -1,10 +1,10 @@
-import { CheckCircle2, CircleAlert, FolderOpen, LoaderCircle, LogIn, LogOut, Play, Square } from "lucide-react";
+import { ScrollSurface, Button, Input, NumberControl, SegmentedControl } from "../../components/Controls";
+import { CheckCircle2, CircleAlert, FolderOpen, LoaderCircle, Play, Square } from "lucide-react";
 import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { LlamaServerProvider, normalizeCodexModels } from "@void-mind/providers";
-import { codexBridge } from "../../lib/codex-bridge";
+import { LlamaServerProvider } from "@void-mind/providers";
 import { runtimeBridge } from "../../lib/runtime-bridge";
-import { useCodexLogin } from "../../lib/use-codex-login";
+import { ConnectionsPanel } from "../../components/ConnectionsPanel";
 import { useMindStore } from "../../stores/mind-store";
 import { SelectControl } from "../../components/SelectControl";
 
@@ -12,39 +12,9 @@ type ActionState = "idle" | "working" | "success" | "error";
 
 export function ModelsScreen() {
   const state = useMindStore();
-  const { login, beginLogin, cancelLogin } = useCodexLogin();
   const [runtimeAction, setRuntimeAction] = useState<ActionState>("idle");
   const [runtimeMessage, setRuntimeMessage] = useState("");
-  const [accountWorking, setAccountWorking] = useState(false);
-  const [accountMessage, setAccountMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const selectedModel = state.models.find((model) => model.id === state.selectedModelId);
-
-  const refreshCodex = async () => {
-    const status = await codexBridge.start();
-    state.setCodexStatus(status);
-    const account = await codexBridge.account();
-    state.setCodexAccount(account);
-    if (account.state === "connected") {
-      state.setProviderModels("openai-codex", normalizeCodexModels(await codexBridge.models()));
-    } else {
-      state.setProviderModels("openai-codex", []);
-    }
-  };
-
-  const disconnectCodex = async () => {
-    setAccountWorking(true);
-    setAccountMessage(null);
-    try {
-      await codexBridge.logout();
-      await refreshCodex();
-      state.setCodexLogin({ state: "idle" });
-      setAccountMessage({ kind: "success", text: "ChatGPT account disconnected from the Codex runtime." });
-    } catch (error) {
-      setAccountMessage({ kind: "error", text: error instanceof Error ? error.message : String(error) });
-    } finally {
-      setAccountWorking(false);
-    }
-  };
 
   const checkRuntime = async () => {
     setRuntimeAction("working");
@@ -129,11 +99,11 @@ export function ModelsScreen() {
   };
 
   return (
-    <section className="settings-surface models-screen">
+    <ScrollSurface className="settings-surface models-screen">
       <header className="surface-heading">
         <div>
           <h1>Intelligence</h1>
-          <p>Connect ChatGPT through the official Codex runtime, or use llama.cpp locally.</p>
+          <p>Connect ChatGPT, use an API key, or run a model locally.</p>
         </div>
         <div className="provider-badge">
           <span className={state.codexAccount?.state === "connected" ? "status-light is-ready" : "status-light"} />
@@ -142,139 +112,100 @@ export function ModelsScreen() {
       </header>
 
       <div className="settings-column">
-        <section className="settings-section account-section">
-          <div className="section-title">
-            <h2>ChatGPT account</h2>
-            <p>Official account authentication, managed by the installed Codex runtime.</p>
-          </div>
-          {state.codexAccount?.state === "connected" ? (
-            <div className="account-row">
-              <div><strong>{state.codexAccount.email ?? "Connected account"}</strong><span>{state.codexAccount.planType ? `ChatGPT ${state.codexAccount.planType}` : "Ready"}</span></div>
-              <button className="secondary-button" type="button" disabled={accountWorking} onClick={() => void disconnectCodex()}><LogOut size={14} /> Disconnect</button>
-            </div>
-          ) : (
-            <div className="button-row">
-              <button className="primary-button" type="button" disabled={login.state === "pending"} onClick={() => void beginLogin("browser")}><LogIn size={15} /> Continue with ChatGPT</button>
-              <button className="secondary-button" type="button" disabled={login.state === "pending"} onClick={() => void beginLogin("deviceCode")}>Use device code</button>
-            </div>
-          )}
-          {login.userCode && <div className="device-code"><span>One-time code</span><strong>{login.userCode}</strong></div>}
-          {login.message && <div className={`status-message is-${login.state}`} role={login.state === "error" ? "alert" : "status"}>{login.message}</div>}
-          {login.loginId && state.codexAccount?.state !== "connected" && <button className="text-button" type="button" onClick={() => void cancelLogin()}>Cancel sign-in</button>}
-          {accountMessage && <div className={`status-message is-${accountMessage.kind}`} role={accountMessage.kind === "error" ? "alert" : "status"}>{accountMessage.text}</div>}
-          {state.codexStatus?.version && <p className="runtime-detail">Codex {state.codexStatus.version}</p>}
-        </section>
+        <ConnectionsPanel />
 
         <section className="settings-section">
           <div className="section-title">
             <h2>Local runtime</h2>
             <p>llama.cpp-compatible, loopback only</p>
           </div>
-          <div className="segmented-control" aria-label="Runtime mode">
-            <button
-              type="button"
-              className={state.runtime.mode === "external" ? "is-active" : ""}
-              onClick={() => state.updateRuntime({ mode: "external" })}
-            >
-              Running server
-            </button>
-            <button
-              type="button"
-              className={state.runtime.mode === "managed" ? "is-active" : ""}
-              onClick={() => state.updateRuntime({ mode: "managed" })}
-            >
-              Managed locally
-            </button>
-          </div>
+          <SegmentedControl label="Runtime mode" value={state.runtime.mode} onValueChange={(mode) => state.updateRuntime({ mode: mode === "managed" ? "managed" : "external" })} options={[{ value: "external", label: "Running server" }, { value: "managed", label: "Managed locally" }]} />
 
           {state.runtime.mode === "external" ? (
             <div className="field-stack">
               <label className="field">
                 <span>Local endpoint</span>
-                <input
+                <Input
                   value={state.runtime.endpoint}
                   onChange={(event) => state.updateRuntime({ endpoint: event.target.value })}
                   spellCheck={false}
                 />
                 <small>Only localhost, 127.0.0.1, or ::1 over HTTP is accepted.</small>
               </label>
-              <button className="primary-button" type="button" onClick={() => void checkRuntime()}>
+              <Button className="primary-button" type="button" onClick={() => void checkRuntime()}>
                 Check local runtime
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="field-stack">
               <label className="field">
                 <span>llama-server executable</span>
                 <div className="path-field">
-                  <input
+                  <Input
                     value={state.runtime.executablePath}
                     onChange={(event) => state.updateRuntime({ executablePath: event.target.value })}
                     placeholder="Select llama-server.exe"
                     spellCheck={false}
                   />
-                  <button type="button" onClick={() => void choosePath("runtime")} aria-label="Select llama-server executable">
+                  <Button type="button" onClick={() => void choosePath("runtime")} aria-label="Select llama-server executable">
                     <FolderOpen size={16} />
-                  </button>
+                  </Button>
                 </div>
               </label>
               <label className="field">
                 <span>GGUF model</span>
                 <div className="path-field">
-                  <input
+                  <Input
                     value={state.runtime.modelPath}
                     onChange={(event) => state.updateRuntime({ modelPath: event.target.value })}
                     placeholder="Select a .gguf file"
                     spellCheck={false}
                   />
-                  <button type="button" onClick={() => void choosePath("model")} aria-label="Select GGUF model">
+                  <Button type="button" onClick={() => void choosePath("model")} aria-label="Select GGUF model">
                     <FolderOpen size={16} />
-                  </button>
+                  </Button>
                 </div>
               </label>
               <div className="field-grid">
                 <label className="field">
                   <span>Port</span>
-                  <input
-                    type="number"
+                  <NumberControl
                     min={1024}
                     max={65535}
                     value={state.runtime.port}
-                    onChange={(event) => state.updateRuntime({ port: event.target.valueAsNumber })}
+                    onValueChange={(value) => state.updateRuntime({ port: value })}
                   />
                 </label>
                 <label className="field">
                   <span>Context</span>
-                  <input
-                    type="number"
+                  <NumberControl
                     min={256}
                     value={state.runtime.context}
-                    onChange={(event) => state.updateRuntime({ context: event.target.valueAsNumber })}
+                    onValueChange={(value) => state.updateRuntime({ context: value })}
                   />
                 </label>
                 <label className="field">
                   <span>GPU layers</span>
-                  <input
-                    type="number"
+                  <NumberControl
                     min={-1}
                     max={999}
                     value={state.runtime.gpuLayers}
-                    onChange={(event) => state.updateRuntime({ gpuLayers: event.target.valueAsNumber })}
+                    onValueChange={(value) => state.updateRuntime({ gpuLayers: value })}
                   />
                 </label>
               </div>
               <div className="button-row">
-                <button
+                <Button
                   className="primary-button"
                   type="button"
                   disabled={!state.runtime.executablePath || !state.runtime.modelPath}
                   onClick={() => void startManaged()}
                 >
                   <Play size={15} /> Start local runtime
-                </button>
-                <button className="secondary-button" type="button" onClick={() => void stopManaged()}>
+                </Button>
+                <Button className="secondary-button" type="button" onClick={() => void stopManaged()}>
                   <Square size={13} /> Stop runtime
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -292,12 +223,12 @@ export function ModelsScreen() {
         <section className="settings-section">
           <div className="section-title">
             <h2>Available models</h2>
-            <p>Models are discovered from the connected runtime.</p>
+            <p>Models are discovered from your connections. API catalogs can include models that do not support text conversations.</p>
           </div>
           {state.models.length ? (
             <div className="model-list">
               {state.models.map((model) => (
-                <button
+                <Button
                   type="button"
                   key={model.id}
                   className={state.selectedModelId === model.id ? "is-active" : ""}
@@ -310,10 +241,10 @@ export function ModelsScreen() {
                 >
                   <span>
                     <strong>{model.displayName}</strong>
-                    <small>{model.providerId === "openai-codex" ? "OpenAI Codex" : model.format || "llama.cpp"} · {model.location}</small>
+                    <small>{model.providerId === "openai-codex" ? "Codex (legacy)" : model.providerId === "openai-chatgpt" ? "ChatGPT plan" : model.providerId === "openai-api" ? "OpenAI API" : model.format || "llama.cpp"} · {model.location}</small>
                   </span>
                   <span>{state.selectedModelId === model.id ? "Active" : "Use model"}</span>
-                </button>
+                </Button>
               ))}
             </div>
           ) : (
@@ -346,10 +277,10 @@ export function ModelsScreen() {
             </div>
           )}
           <p className="honesty-note">
-            A discovered model is labeled as an imported baseline only. VOID Mind does not claim an A1 model exists without a verified trained artifact and manifest.
+            Availability depends on the selected connection. VOID Mind never switches to another provider automatically.
           </p>
         </section>
       </div>
-    </section>
+    </ScrollSurface>
   );
 }

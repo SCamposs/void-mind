@@ -1,3 +1,4 @@
+import { ScrollSurface, Button, Textarea } from "../../components/Controls";
 import { ArrowRight, MessageSquareText, Plus, Shapes } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { resolveProviderPreference } from "@void-mind/mind-core";
@@ -22,7 +23,7 @@ export function HomeScreen() {
     setPrompt("");
   };
 
-  const connected = state.codexAccount?.state === "connected";
+  const connected = state.codexAccount?.state === "connected" || state.connections?.accounts.some((a) => a.id === state.connections?.activeAccountId && a.connected && a.planAuthorized) || state.connections?.apiConnected;
   const workspace = state.workspaces.find((item) => item.id === state.selectedWorkspaceId);
   const resolution = resolveProviderPreference({
     workspace,
@@ -47,13 +48,13 @@ export function HomeScreen() {
         : "Connect ChatGPT to begin";
 
   return (
-    <section className="home-screen">
+    <ScrollSurface className="home-screen">
       <div className="home-hero">
         <span className="quiet-label">Intelligence environment</span>
         <h1>Make room for thought.</h1>
         <p>Start with a question. Shape the context with a workspace when the work needs continuity.</p>
         <form className="home-composer" onSubmit={submit}>
-          <textarea
+          <Textarea
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             onKeyDown={(event) => {
@@ -80,36 +81,36 @@ export function HomeScreen() {
                 onChange={(value) => state.selectWorkspace(value || null)}
               />
             </div>
-            <button type="submit" disabled={!prompt.trim() || !activeModel} aria-label="Start conversation">
+            <Button type="submit" disabled={!prompt.trim() || !activeModel} aria-label="Start conversation">
               <ArrowRight size={18} />
-            </button>
+            </Button>
           </div>
         </form>
       </div>
 
       <div className="home-grid">
         <section className="home-panel">
-          <header><h2>Recent</h2><button type="button" onClick={() => state.setSection("conversations")}>View all</button></header>
+          <header><h2>Recent</h2><Button type="button" onClick={() => state.setSection("conversations")}>View all</Button></header>
           {recent.length ? recent.map((conversation) => (
-            <button className="home-row" type="button" key={conversation.id} onClick={() => state.selectConversation(conversation.id)}>
+            <Button className="home-row" type="button" key={conversation.id} onClick={() => state.selectConversation(conversation.id)}>
               <MessageSquareText size={15} />
               <span><strong>{conversation.title}</strong><small>{new Date(conversation.updatedAt).toLocaleDateString()}</small></span>
               <ArrowRight size={14} />
-            </button>
+            </Button>
           )) : <p className="section-empty">Your conversations will gather here.</p>}
         </section>
 
         <section className="home-panel">
-          <header><h2>Workspaces</h2><button type="button" onClick={() => state.setSection("workspaces")}><Plus size={13} /> New</button></header>
+          <header><h2>Workspaces</h2><Button type="button" onClick={() => state.setSection("workspaces")}><Plus size={13} /> New</Button></header>
           {state.workspaces.length ? state.workspaces.slice(0, 4).map((workspace) => (
-            <button className="home-row" type="button" key={workspace.id} onClick={() => { state.selectWorkspace(workspace.id); state.setSection("workspaces"); }}>
+            <Button className="home-row" type="button" key={workspace.id} onClick={() => { state.selectWorkspace(workspace.id); state.setSection("workspaces"); }}>
               <Shapes size={15} />
               <span><strong>{workspace.name}</strong><small>{state.knowledge.filter((item) => item.workspaceId === workspace.id).length} sources</small></span>
               <ArrowRight size={14} />
-            </button>
+            </Button>
           )) : <p className="section-empty">Create a workspace for instructions and selected context.</p>}
         </section>
       </div>
-    </section>
+    </ScrollSurface>
   );
 }

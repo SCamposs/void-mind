@@ -1,3 +1,5 @@
+import { openUsage } from "../../lib/connections-bridge";
+import { Button, Textarea } from "../../components/Controls";
 import { ArrowUp, Square } from "lucide-react";
 import { useRef, useState } from "react";
 import type { ModelDescriptor } from "@void-mind/mind-core";
@@ -39,7 +41,7 @@ export function Composer({
       <div className="composer">
         <label>
           <span className="sr-only">Message VOID Mind</span>
-          <textarea
+          <Textarea
             ref={textarea}
             value={draft}
             disabled={disabled}
@@ -69,18 +71,18 @@ export function Composer({
               options={models.map((model) => ({
                 value: model.id,
                 label: model.displayName,
-                detail: model.location === "remote" ? "OpenAI Codex" : "Local runtime"
+                detail: model.providerId === "openai-chatgpt" ? "ChatGPT plan" : model.providerId === "openai-api" ? "OpenAI API" : model.location === "remote" ? "Codex (legacy)" : "Local runtime"
               }))}
               onChange={onModelChange}
             />
           </div>
           {generating ? (
-            <button className="send-button stop-button" type="button" onClick={onStop}>
+            <Button className="send-button stop-button" type="button" onClick={onStop}>
               <Square size={13} fill="currentColor" />
               <span>Stop</span>
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               className="send-button"
               type="button"
               disabled={disabled || !draft.trim()}
@@ -88,11 +90,11 @@ export function Composer({
               aria-label="Send message"
             >
               <ArrowUp size={17} />
-            </button>
+            </Button>
           )}
         </div>
       </div>
-      <p>Enter to send, Shift + Enter for a new line. {privacyMessage}</p>
+      <p>Enter to send, Shift + Enter for a new line. {privacyMessage} {models.find((m) => m.id === selectedModelId)?.providerId === "openai-chatgpt" && <Button className="text-button usage-link" type="button" onClick={() => void openUsage()}>Manage usage</Button>}</p>
     </div>
   );
 }

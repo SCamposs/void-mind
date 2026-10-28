@@ -1,7 +1,9 @@
+import { Button, CheckControl, ScrollSurface } from "../../components/Controls";
 import { BookOpen, Brain, MessageSquarePlus, PanelLeft, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveProviderPreference } from "@void-mind/mind-core";
-import { CodexProvider, LlamaServerProvider, type MindProvider } from "@void-mind/providers";
+import { CodexProvider, LlamaServerProvider, OpenAIProvider, type MindProvider } from "@void-mind/providers";
+import { connectionsBridge } from "../../lib/connections-bridge";
 import { codexBridge } from "../../lib/codex-bridge";
 import { conversationContext } from "../../lib/conversation-context";
 import { availableProviderIds } from "../../lib/provider-availability";
@@ -143,6 +145,8 @@ export function ConversationScreen() {
     controller.current = abort;
     const activeProvider: MindProvider = model.providerId === "openai-codex"
       ? new CodexProvider(codexBridge)
+      : model.providerId === "openai-chatgpt" || model.providerId === "openai-api"
+      ? new OpenAIProvider(model.providerId, connectionsBridge)
       : new LlamaServerProvider(snapshot.runtime.endpoint);
     provider.current = activeProvider;
     snapshot.setGeneration("connecting");
@@ -253,7 +257,7 @@ export function ConversationScreen() {
         <ConversationList />
       </div>
       {compactHistory && historyOpen && (
-        <button
+        <Button
           className="history-scrim"
           type="button"
           onClick={() => setHistoryOpen(false)}
@@ -262,7 +266,7 @@ export function ConversationScreen() {
       )}
       <div className="conversation-main">
         <header className="conversation-header">
-          <button
+          <Button
             ref={historyToggle}
             className="icon-button history-toggle"
             type="button"
@@ -270,27 +274,27 @@ export function ConversationScreen() {
             aria-label="Open conversation history"
           >
             <PanelLeft size={18} />
-          </button>
+          </Button>
           <div>
             <h1>{conversation?.title ?? "Conversations"}</h1>
             <p>{selectedModel ? `${selectedModel.displayName} · ${resolution.source}` : "No model active"}</p>
           </div>
           {conversation && workspace && (
-            <button ref={contextToggle} className="context-button" type="button" onClick={() => setContextOpen(!contextOpen)} aria-expanded={contextOpen} aria-controls="conversation-context">
+            <Button ref={contextToggle} className="context-button" type="button" onClick={() => setContextOpen(!contextOpen)} aria-expanded={contextOpen} aria-controls="conversation-context">
               <BookOpen size={15} /> Context
               {(conversation.contextKnowledgeIds?.length ?? 0) > 0 && <span>{conversation.contextKnowledgeIds?.length}</span>}
-            </button>
+            </Button>
           )}
         </header>
 
         {contextOpen && conversation && workspace && (
           <aside ref={contextPanel} id="conversation-context" className="context-panel" aria-label="Conversation context">
-            <header><div><strong>{workspace.name}</strong><span>Workspace context</span></div><button type="button" onClick={() => { setContextOpen(false); contextToggle.current?.focus(); }} aria-label="Close context"><X size={15} /></button></header>
+            <header><div><strong>{workspace.name}</strong><span>Workspace context</span></div><Button type="button" onClick={() => { setContextOpen(false); contextToggle.current?.focus(); }} aria-label="Close context"><X size={15} /></Button></header>
             {workspace.instructions && <p>{workspace.instructions}</p>}
             <div className="context-sources">
               {state.knowledge.filter((item) => item.workspaceId === workspace.id).map((item) => (
                 <label key={item.id}>
-                  <input type="checkbox" checked={conversation.contextKnowledgeIds?.includes(item.id) ?? false} onChange={() => state.toggleConversationKnowledge(conversation.id, item.id)} />
+                  <CheckControl checked={conversation.contextKnowledgeIds?.includes(item.id) ?? false} onCheckedChange={() => state.toggleConversationKnowledge(conversation.id, item.id)} />
                   <span><strong>{item.title}</strong><small>{item.sourceFilename}</small></span>
                 </label>
               ))}
@@ -303,10 +307,10 @@ export function ConversationScreen() {
           <div className="conversation-empty">
             <Brain size={28} strokeWidth={1.35} aria-hidden="true" />
             <h2>No model is active.</h2>
-            <p>Connect ChatGPT through Codex or choose an available local model before starting.</p>
-            <button className="primary-button" type="button" onClick={() => state.setSection("models")}>
+            <p>Connect ChatGPT, add an API key, or choose an available local model before starting.</p>
+            <Button className="primary-button" type="button" onClick={() => state.setSection("models")}>
               Configure intelligence
-            </button>
+            </Button>
           </div>
         ) : !conversation || conversation.messages.length === 0 ? (
           <div className="conversation-empty">
@@ -315,7 +319,7 @@ export function ConversationScreen() {
             <p>Ask, explore, draft, study, or reason with the selected intelligence.</p>
           </div>
         ) : (
-          <div className="messages" ref={scroll} aria-live="polite">
+          <ScrollSurface className="messages" viewportRef={scroll} label="Conversation messages">
             <div className="message-column">
               {conversation.messages.map((message, index) => (
                 <MessageItem
@@ -338,7 +342,7 @@ export function ConversationScreen() {
                 </div>
               )}
             </div>
-          </div>
+          </ScrollSurface>
         )}
 
         <Composer

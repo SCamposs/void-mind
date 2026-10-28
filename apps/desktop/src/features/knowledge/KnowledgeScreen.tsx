@@ -1,3 +1,4 @@
+import { ScrollSurface, Button, Disclosure } from "../../components/Controls";
 import { FileText, Plus, Trash2 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useState } from "react";
@@ -50,10 +51,10 @@ export function KnowledgeScreen() {
   };
 
   return (
-    <section className="settings-surface knowledge-screen">
+    <ScrollSurface className="settings-surface knowledge-screen">
       <header className="surface-heading">
         <div><h1>Knowledge</h1><p>Explicit Markdown and text sources, scoped to a workspace.</p></div>
-        <button className="primary-button" type="button" disabled={!workspace} onClick={() => void add()}><Plus size={15} /> Import source</button>
+        <Button className="primary-button" type="button" disabled={!workspace} onClick={() => void add()}><Plus size={15} /> Import source</Button>
       </header>
       <div className="knowledge-toolbar">
         <div className="field">
@@ -82,19 +83,18 @@ export function KnowledgeScreen() {
             <div>
               <h2>{item.title}</h2>
               <p>{item.sourceFilename} · {(item.size / 1024).toFixed(1)} KB</p>
-              <details className="knowledge-preview">
-                <summary>View full source</summary>
+              <Disclosure className="knowledge-preview" title="View full source">
                 <pre>{item.content}</pre>
-              </details>
+              </Disclosure>
             </div>
             {deletingId === item.id ? (
-              <div className="knowledge-confirm"><span>Remove?</span><button type="button" onClick={() => void remove(item.id)}>Yes</button><button type="button" onClick={() => setDeletingId(null)}>No</button></div>
-            ) : <button type="button" onClick={() => setDeletingId(item.id)} aria-label={`Remove ${item.title}`}><Trash2 size={15} /></button>}
+              <div className="knowledge-confirm"><span>Remove?</span><Button type="button" onClick={() => void remove(item.id)}>Yes</Button><Button type="button" onClick={() => setDeletingId(null)}>No</Button></div>
+            ) : <Button type="button" onClick={() => setDeletingId(item.id)} aria-label={`Remove ${item.title}`}><Trash2 size={15} /></Button>}
           </article>
         ))}
         {workspace && !items.length && <p className="section-empty">No sources imported into this workspace.</p>}
         {!workspace && <p className="section-empty">Choose or create a workspace before importing knowledge.</p>}
       </div>
-    </section>
+    </ScrollSurface>
   );
 }

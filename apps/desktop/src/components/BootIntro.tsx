@@ -1,3 +1,4 @@
+import { Button } from "./Controls";
 type BootIntroProps = {
   onSkip(): void;
 };
@@ -20,9 +21,9 @@ export function BootIntro({ onSkip }: BootIntroProps) {
         </svg>
         <span className="boot-word">MIND</span>
       </div>
-      <button className="boot-skip" type="button" onClick={onSkip} autoFocus>
+      <Button className="boot-skip" type="button" onClick={onSkip} autoFocus>
         Skip intro
-      </button>
+      </Button>
     </section>
   );
 }

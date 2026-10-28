@@ -1,3 +1,4 @@
+import { ScrollSurface, Button, Input, Textarea } from "../../components/Controls";
 import { ArrowRight, MessageSquareText, Plus, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useMindStore } from "../../stores/mind-store";
@@ -81,25 +82,25 @@ export function WorkspacesScreen() {
   };
 
   return (
-    <section className="workspace-screen settings-surface">
+    <ScrollSurface className="workspace-screen settings-surface">
       <header className="surface-heading">
         <div><h1>Workspaces</h1><p>Durable instructions and context for related conversations.</p></div>
-        <form onSubmit={create}><button className="primary-button" type="submit"><Plus size={15} /> New workspace</button></form>
+        <form onSubmit={create}><Button className="primary-button" type="submit"><Plus size={15} /> New workspace</Button></form>
       </header>
       <div className="workspace-layout">
         <aside className="workspace-list">
           {state.workspaces.map((item) => (
-            <button type="button" className={item.id === workspace?.id ? "is-active" : ""} key={item.id} onClick={() => state.selectWorkspace(item.id)}>
+            <Button type="button" className={item.id === workspace?.id ? "is-active" : ""} key={item.id} onClick={() => state.selectWorkspace(item.id)}>
               <strong>{item.name}</strong><span>{state.conversations.filter((conversation) => conversation.workspaceId === item.id).length} conversations</span>
-            </button>
+            </Button>
           ))}
           {!state.workspaces.length && <p className="section-empty">No workspaces yet.</p>}
         </aside>
         {workspace ? (
           <div className="workspace-editor">
-            <label className="field"><span>Name</span><input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
-            <label className="field"><span>Description</span><textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What belongs here?" /></label>
-            <label className="field"><span>Instructions</span><textarea rows={8} value={instructions} onChange={(event) => setInstructions(event.target.value)} placeholder="Guidance applied to conversations in this workspace." /></label>
+            <label className="field"><span>Name</span><Input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
+            <label className="field"><span>Description</span><Textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What belongs here?" /></label>
+            <label className="field"><span>Instructions</span><Textarea rows={8} value={instructions} onChange={(event) => setInstructions(event.target.value)} placeholder="Guidance applied to conversations in this workspace." /></label>
             <div className="field">
               <span>Preferred intelligence</span>
               <SelectControl
@@ -110,7 +111,7 @@ export function WorkspacesScreen() {
                   ...state.models.map((model) => ({
                     value: model.id,
                     label: model.displayName,
-                    detail: model.providerId === "openai-codex" ? "OpenAI Codex" : "Local runtime"
+                    detail: model.providerId === "openai-chatgpt" ? "ChatGPT plan" : model.providerId === "openai-api" ? "OpenAI API" : model.location === "remote" ? "Codex (legacy)" : "Local runtime"
                   }))
                 ]}
                 onChange={setPreferenceModelId}
@@ -118,30 +119,30 @@ export function WorkspacesScreen() {
               <small>Conversations inherit this unless you explicitly choose another model.</small>
             </div>
             <div className="button-row">
-              <button className="primary-button" type="button" disabled={deleting} onClick={save}>Save changes</button>
+              <Button className="primary-button" type="button" disabled={deleting} onClick={save}>Save changes</Button>
               {confirmDelete ? (
-                <div className="inline-confirm"><span>Delete this workspace and its imported copies?</span><button type="button" disabled={deleting} onClick={() => void remove()}>{deleting ? "Deleting…" : "Delete"}</button><button type="button" disabled={deleting} onClick={() => setConfirmDelete(false)}>Keep</button></div>
-              ) : <button className="danger-button" type="button" disabled={deleting} onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Delete workspace</button>}
+                <div className="inline-confirm"><span>Delete this workspace and its imported copies?</span><Button type="button" disabled={deleting} onClick={() => void remove()}>{deleting ? "Deleting…" : "Delete"}</Button><Button type="button" disabled={deleting} onClick={() => setConfirmDelete(false)}>Keep</Button></div>
+              ) : <Button className="danger-button" type="button" disabled={deleting} onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Delete workspace</Button>}
             </div>
             {error && <p className="inline-error" role="alert">{error}</p>}
             <section className="home-panel" aria-label="Workspace conversations">
               <header>
                 <h2>Conversations</h2>
-                <button type="button" disabled={deleting} onClick={() => state.createConversation(workspace.id)}>
+                <Button type="button" disabled={deleting} onClick={() => state.createConversation(workspace.id)}>
                   <Plus size={13} /> New conversation
-                </button>
+                </Button>
               </header>
               {conversations.length ? conversations.map((conversation) => (
-                <button className="home-row" type="button" key={conversation.id} onClick={() => state.selectConversation(conversation.id)}>
+                <Button className="home-row" type="button" key={conversation.id} onClick={() => state.selectConversation(conversation.id)}>
                   <MessageSquareText size={15} />
                   <span><strong>{conversation.title}</strong><small>{new Date(conversation.updatedAt).toLocaleDateString()}</small></span>
                   <ArrowRight size={14} />
-                </button>
+                </Button>
               )) : <p className="section-empty">Start a conversation with this workspace’s instructions and preferred intelligence.</p>}
             </section>
           </div>
         ) : <div className="workspace-blank"><h2>A room for ongoing work.</h2><p>Create a workspace to group conversations, instructions, and explicit knowledge sources.</p></div>}
       </div>
-    </section>
+    </ScrollSurface>
   );
 }

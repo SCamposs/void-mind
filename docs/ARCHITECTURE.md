@@ -43,7 +43,8 @@ desktop UI
   └── persistence ──> mind-core
 
 Tauri native runtime
-  ├── official Codex app-server child process
+  ├── official OpenAI OAuth + Responses HTTPS/SSE + OS credential vault
+  ├── legacy official Codex app-server child process
   ├── app-managed Knowledge copies
   └── selected llama-server process
 
@@ -92,3 +93,9 @@ The A-series is lineage, not marketing. A0 may identify an imported compatible b
 ## Boundary with VOID
 
 VOID and VOID Mind remain sibling repositories. VOID is read-only to this project. The exact symbol geometry is shared intentionally, while application code is recreated within VOID Mind. A future `mind-core` consumer may power a reduced Mind Mini inside VOID without nesting repositories or mixing Python and desktop dependencies.
+
+## Direct connection boundary
+
+Native `Connections` owns separate saved ChatGPT registrations and a user-supplied OpenAI API key. A single-instance plugin prevents two app processes from racing rotating credentials. The native vault uses bounded immutable revisions split into small credential entries for Windows size limits, switches the manifest after successful writes, then cleans the old revision. No plaintext credential files exist. A temporary callback listener binds only `127.0.0.1` on an available port, validates state/PKCE/nonce and the signed ID token, and closes on completion, timeout or cancellation. HTTP redirects are disabled and API/auth origins are fixed. Browser sign-in starts in native code; React receives only safe metadata and a login-attempt ID.
+
+The native SSE request is cancellation-scoped and non-persistent. Cancellation drops the upstream HTTP response, preserves partial product messages, and waits for native cleanup. Token renewal finishes atomically before cancellation is honored. Streams that end without `response.completed`, explicit failures, and incomplete responses are errors. Context is always provided from Mind-owned conversation history and explicitly selected workspace sources.

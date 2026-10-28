@@ -1,3 +1,4 @@
+import { ScrollSurface, Button, Input, Textarea, SwitchControl, Disclosure, NumberControl } from "../../components/Controls";
 import type { GenerationSettings, ProfileId } from "@void-mind/mind-core";
 import { activeSettings, useMindStore } from "../../stores/mind-store";
 
@@ -26,7 +27,7 @@ export function SettingsScreen() {
   const profiles = [...state.profiles, state.customProfile];
 
   return (
-    <section className="settings-surface">
+    <ScrollSurface className="settings-surface">
       <header className="surface-heading">
         <div>
           <h1>Settings</h1>
@@ -41,7 +42,7 @@ export function SettingsScreen() {
           </div>
           <div className="profile-list">
             {profiles.map((profile) => (
-              <button
+              <Button
                 key={profile.id}
                 type="button"
                 className={state.selectedProfileId === profile.id ? "is-active" : ""}
@@ -49,23 +50,22 @@ export function SettingsScreen() {
               >
                 <strong>{profile.name}</strong>
                 <span>{profile.description}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </section>
 
         <section className="settings-section">
-          <details>
-            <summary>
+          <Disclosure title={
               <span>
                 <strong>Advanced generation</strong>
                 <small>Technical controls for the Custom profile</small>
               </span>
-            </summary>
+            }>
             <div className="advanced-settings">
               <label className="field field-wide">
                 <span>System instructions</span>
-                <textarea
+                <Textarea
                   rows={5}
                   value={settings.systemInstructions}
                   onChange={(event) =>
@@ -77,14 +77,13 @@ export function SettingsScreen() {
                 {numericFields.map((field) => (
                   <label className="field" key={field.key}>
                     <span>{field.label}</span>
-                    <input
-                      type="number"
+                    <NumberControl
                       min={field.min}
                       max={field.max}
                       step={field.step}
                       value={settings[field.key]}
-                      onChange={(event) =>
-                        state.updateCustomSettings({ [field.key]: event.target.valueAsNumber })
+                      onValueChange={(value) =>
+                        state.updateCustomSettings({ [field.key]: value })
                       }
                     />
                   </label>
@@ -92,7 +91,7 @@ export function SettingsScreen() {
               </div>
               <label className="field field-wide">
                 <span>Stop sequences</span>
-                <input
+                <Input
                   value={settings.stopSequences.join(", ")}
                   onChange={(event) =>
                     state.updateCustomSettings({
@@ -106,7 +105,7 @@ export function SettingsScreen() {
                 />
               </label>
             </div>
-          </details>
+          </Disclosure>
         </section>
 
         <section className="settings-section">
@@ -120,11 +119,10 @@ export function SettingsScreen() {
                 <strong>Show boot intro</strong>
                 <small>Display the VOID Mind identity when the app opens.</small>
               </span>
-              <input
-                type="checkbox"
+              <SwitchControl
                 checked={state.preferences.showBootIntro}
-                onChange={(event) =>
-                  state.updatePreferences({ showBootIntro: event.target.checked })
+                onCheckedChange={(checked) =>
+                  state.updatePreferences({ showBootIntro: checked })
                 }
               />
             </label>
@@ -133,11 +131,10 @@ export function SettingsScreen() {
                 <strong>Retain conversations</strong>
                 <small>Store conversations in this app's local storage.</small>
               </span>
-              <input
-                type="checkbox"
+              <SwitchControl
                 checked={state.preferences.retainConversations}
-                onChange={(event) =>
-                  state.updatePreferences({ retainConversations: event.target.checked })
+                onCheckedChange={(checked) =>
+                  state.updatePreferences({ retainConversations: checked })
                 }
               />
             </label>
@@ -154,12 +151,12 @@ export function SettingsScreen() {
             <h2>Privacy boundary</h2>
           </div>
           <p>
-            {state.selectedProviderId === "openai-codex"
-              ? "When ChatGPT is active, your prompt, workspace instructions, and only the knowledge sources selected for that conversation are sent through the official Codex runtime. Account credentials remain runtime-managed."
+            {state.selectedProviderId.startsWith("openai-")
+              ? "When ChatGPT is active, your prompt, workspace instructions, and only the knowledge sources selected for that conversation are sent to OpenAI through the selected connection. Direct connection credentials stay in your system credential store; legacy Codex credentials remain runtime-managed."
               : "With VOID Local, prompts and model execution remain on this device through the configured loopback runtime."}
           </p>
         </section>
       </div>
-    </section>
+    </ScrollSurface>
   );
 }
