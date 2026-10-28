@@ -200,7 +200,8 @@ export function ConversationScreen() {
         useMindStore.getState().updateMessage(assistantId, content, "stopped");
         useMindStore.getState().setGeneration("stopped");
       } else {
-        const message = error instanceof Error ? error.message : "Generation failed.";
+        const message = error instanceof Error ? error.message
+          : typeof error === "string" && error.trim() ? error : "Generation failed.";
         useMindStore.getState().updateMessage(
           assistantId,
           content || "The response could not be completed.",

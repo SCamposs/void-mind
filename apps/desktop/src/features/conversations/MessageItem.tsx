@@ -66,7 +66,7 @@ export function MessageItem({
             {message.status === "streaming" && !message.content ? (
               <div className="thinking-line" role="status">
                 <span />
-                Thinking locally
+                Thinking…
               </div>
             ) : (
               <MarkdownMessage content={message.content} />

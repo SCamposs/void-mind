@@ -32,6 +32,8 @@ The visual checkpoint passed ESLint, TypeScript, production Vite build, 37 JavaS
 
 ## Remaining phase gates
 
+Native inference attempt after the desktop became available: the app loaded the existing ChatGPT account and runtime model catalog; Home submitted the non-coding prompt `Explique em duas frases por que o céu é azul.` and created the conversation. Generation failed before producing assistant content. The UI masked the native string rejection as `Generation failed.` Source now preserves native string errors and labels sandbox failures explicitly; the loading label was also corrected from `Thinking locally` to `Thinking…`. The exact cause of this native attempt is not yet confirmed and must be retested. This is a failed inference test, not a passed streaming receipt.
+
 - Validate normal non-elevated ChatGPT login, streaming, cancellation, logout, restart and conversation isolation. See CODEX_PROVIDER.md for the elevated Windows sandbox limitation.
 - Inspect the final branded native setup/uninstall pages and custom application window actions.
 - Confirm final responsive layout, keyboard focus and reduced-motion behavior interactively.

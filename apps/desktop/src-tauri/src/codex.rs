@@ -603,7 +603,9 @@ fn error_detail(error: &Value) -> Option<&str> {
 
 fn error_category(message: &str) -> &'static str {
     let message = message.to_ascii_lowercase();
-    if message.contains("not installed")
+    if message.contains("sandbox") || message.contains("effective :root") {
+        "sandboxUnavailable"
+    } else if message.contains("not installed")
         || message.contains("not available on this device")
         || message.contains("install codex")
     {
@@ -642,6 +644,7 @@ fn error_category(message: &str) -> &'static str {
 
 fn user_error_message(message: &str) -> String {
     match error_category(message) {
+        "sandboxUnavailable" => "Codex could not create the restricted conversation sandbox. Run VOID Mind without administrator privileges and try again. Access was not broadened.".into(),
         "runtimeMissing" => {
             "Install Codex or make it available to VOID Mind, then try again.".into()
         }
@@ -1327,6 +1330,10 @@ mod tests {
 
     #[test]
     fn maps_errors_without_exposing_protocol_details() {
+        assert_eq!(
+            error_category("elevated Windows sandbox requires effective :root read access"),
+            "sandboxUnavailable"
+        );
         assert_eq!(error_category("401 unauthorized"), "authenticationRequired");
         assert_eq!(error_category("Codex is not installed"), "runtimeMissing");
         assert_eq!(error_category("rate limit reached"), "usageLimit");
