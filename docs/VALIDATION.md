@@ -32,6 +32,8 @@ The visual checkpoint passed ESLint, TypeScript, production Vite build, 37 JavaS
 
 ## Remaining phase gates
 
+MXC follow-up: no-inference protocol creation succeeded with the installed desktop Codex 0.165.0-alpha.1.2 and explicit MXC while retaining minimal-read filesystem permissions and disabled tool networking. The npm 0.153.4 runtime rejected MXC as unsupported. Discovery/configuration now prefer a compatible runtime and MXC on Windows; 15 Rust tests and lint pass. This proves thread creation only, not a streamed response or effective denied-path behavior.
+
 Native inference attempt after the desktop became available: the app loaded the existing ChatGPT account and runtime model catalog; Home submitted the non-coding prompt `Explique em duas frases por que o céu é azul.` and created the conversation. Generation failed before producing assistant content. The UI masked the native string rejection as `Generation failed.` Source now preserves native string errors and labels sandbox failures explicitly; the loading label was also corrected from `Thinking locally` to `Thinking…`. The exact cause of this native attempt is not yet confirmed and must be retested. This is a failed inference test, not a passed streaming receipt.
 
 - Validate normal non-elevated ChatGPT login, streaming, cancellation, logout, restart and conversation isolation. See CODEX_PROVIDER.md for the elevated Windows sandbox limitation.

@@ -8,7 +8,8 @@ import { resolve } from "node:path";
 
 // Explicit diagnostic: prints only phase/status and bounded runtime errors.
 // Does not read auth files, print account/model payloads or submit a user turn.
-const [executable, directory] = process.argv.slice(2);
+const [executable, directory, sandbox] = process.argv.slice(2);
+if (sandbox && sandbox !== "mxc") throw new Error("Only the explicit MXC diagnostic override is supported.");
 if (!executable || !directory) throw new Error("Usage: node scripts/probe-codex.mjs <codex.exe> <neutral-workspace>");
 const cwd = resolve(directory);
 await mkdir(cwd, { recursive: true });
@@ -54,6 +55,7 @@ try {
     model: model.id, cwd, approvalPolicy: "never", ephemeral: true,
     baseInstructions: "Answer general questions directly. Do not use tools, files, shell or project access.",
     config: {
+      ...(sandbox ? { windows: { sandbox } } : {}),
       default_permissions: "void_mind",
       permissions: { void_mind: {
         description: "Isolated general-purpose conversation",
@@ -69,4 +71,6 @@ try {
   lines.close();
   child.stdin.end();
   child.kill();
+  child.stdout.destroy();
+  child.stderr.destroy();
 }

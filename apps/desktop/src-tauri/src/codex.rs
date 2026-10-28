@@ -759,9 +759,29 @@ fn locate_codex() -> Option<PathBuf> {
             }
         }
     }
-    candidates
+    let candidates: Vec<PathBuf> = candidates
         .into_iter()
-        .find_map(|path| resolve_codex_candidate(&path))
+        .filter_map(|path| resolve_codex_candidate(&path))
+        .collect();
+    #[cfg(windows)]
+    if let Some(path) = candidates
+        .iter()
+        .find(|path| supports_mxc_version(&codex_version(path)))
+    {
+        return Some(path.clone());
+    }
+    candidates.into_iter().next()
+}
+
+#[cfg(any(windows, test))]
+fn supports_mxc_version(version: &str) -> bool {
+    let mut parts = version.split(['.', '-']);
+    let major = parts.next().and_then(|part| part.parse::<u32>().ok());
+    let minor = parts.next().and_then(|part| part.parse::<u32>().ok());
+    matches!(
+        (major, minor),
+        (Some(1..), Some(_)) | (Some(0), Some(162..))
+    )
 }
 
 fn codex_version(path: &Path) -> String {
@@ -794,7 +814,7 @@ fn isolated_conversation_config(neutral_cwd: &Path) -> Value {
         Value::String("read".into()),
     );
 
-    json!({
+    let mut config = json!({
         "default_permissions": "void_mind",
         "permissions": {
             "void_mind": {
@@ -803,7 +823,11 @@ fn isolated_conversation_config(neutral_cwd: &Path) -> Value {
                 "network": { "enabled": false }
             }
         }
-    })
+    });
+    if cfg!(windows) {
+        config["windows"] = json!({ "sandbox": "mxc" });
+    }
+    config
 }
 
 fn context_instructions(value: Option<String>) -> String {
@@ -1237,6 +1261,14 @@ mod tests {
         assert!(!is_codex_name(Path::new("powershell.exe")));
     }
 
+    #[test]
+    fn recognizes_runtime_versions_with_official_mxc_support() {
+        assert!(!super::supports_mxc_version("0.153.4"));
+        assert!(!super::supports_mxc_version("Unknown"));
+        assert!(super::supports_mxc_version("0.162.0"));
+        assert!(super::supports_mxc_version("0.165.0-alpha.1.2"));
+    }
+
     #[cfg(windows)]
     #[test]
     fn resolves_the_native_binary_behind_an_official_npm_shim() {
@@ -1352,6 +1384,9 @@ mod tests {
         let filesystem = &config["permissions"]["void_mind"]["filesystem"];
 
         assert_eq!(config["default_permissions"], "void_mind");
+        if cfg!(windows) {
+            assert_eq!(config["windows"]["sandbox"], "mxc");
+        }
         assert_eq!(filesystem[":minimal"], "read");
         assert_eq!(filesystem[neutral.to_string_lossy().as_ref()], "read");
         assert!(filesystem.get(":root").is_none());
