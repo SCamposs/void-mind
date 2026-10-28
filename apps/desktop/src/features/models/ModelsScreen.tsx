@@ -105,10 +105,7 @@ export function ModelsScreen() {
           <h1>Intelligence</h1>
           <p>Connect ChatGPT, use an API key, or run a model locally.</p>
         </div>
-        <div className="provider-badge">
-          <span className={state.codexAccount?.state === "connected" ? "status-light is-ready" : "status-light"} />
-          {state.codexAccount?.state === "connected" ? "ChatGPT connected" : "Codex"}
-        </div>
+
       </header>
 
       <div className="settings-column">

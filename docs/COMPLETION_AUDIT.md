@@ -1,6 +1,6 @@
 # Environment phase completion audit
 
-This is an open audit, not a completion declaration. Numbering follows section 77 of VOID_MIND_ENVIRONMENT_GOAL.md. Source review and fixture tests do not substitute for native behavior or visual acceptance.
+This is an open audit, not a completion declaration. The user subsequently approved direct official ChatGPT plan authentication plus an OpenAI API key; see CONNECTIONS.md for the requirement amendment. Numbering follows section 77 of VOID_MIND_ENVIRONMENT_GOAL.md. Source review and fixture tests do not substitute for native behavior or visual acceptance.
 
 | Criterion | Evidence level | Current evidence / remaining gate |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 | 13 | Source + tests | Catalog comes from runtime; test model names are fixtures. |
 | 14 | Source reviewed | Runtime reasoning metadata drives selectors; interactive switching pending. |
 | 15 | Native inference observed | Actual Portuguese answer and context-dependent follow-up completed after MXC correction. Token cadence still needs direct observation. |
-| 16 | Partial | Interrupt tests cover active and late-start turns; actual cancellation unverified. |
+| 16 | Native legacy Stop observed; direct path partial | Interrupt fixtures pass; native Stop preserved a stable partial answer through restart. Direct HTTP cancellation has orchestration tests but no live credential-backed receipt. |
 | 17 | Source + tests | Product conversation ID and remote binding are separate; resume test passes. |
 | 18 | Partial | Neutral cwd and minimal read profile tested structurally; OS sandbox validation pending. |
 | 19 | Source reviewed | General-purpose product surfaces; Codex in Intelligence/provider details. |
@@ -44,12 +44,12 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 | 38 | Partial | Shortcuts/drawers/focus implemented; full keyboard walkthrough pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Verified checks | 43 JS tests, 15 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
+| 41 | Verified checks | 51 JS tests, 22 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
 | 42 | Windows build passed | Production and NSIS rebuild with MXC passed; Linux release unverified. |
 | 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
-| 46 | Partial native QA | Existing account/catalog recovered after restart; real inference and continuation passed with MXC. Fresh login/logout and Stop remain pending. |
+| 46 | Partial native QA | Existing account/catalog recovered after restart; real inference and continuation passed with MXC. Fresh direct login, direct inference, refresh and logout remain pending; legacy Stop was observed. |
 | 47 | Documented | CODEX_PROVIDER.md and VALIDATION.md record runtime/sandbox and visual automation limits. |
 
 ## Additional user-requested gates
@@ -58,3 +58,9 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 - Inspect setup/uninstall pages and titlebar actions after the Windows capture/activation failure is resolved.
 - Publish alpha.1 only after required gates; prepared commits and local setup are not a published release.
 - Transfer design to sibling VOID only in a subsequent authorized phase. Current phase keeps it read-only.
+
+## Connection/control amendment validation
+
+Direct `openai-chatgpt` and `openai-api` providers are implemented separately from the legacy Codex provider. Primary login no longer requires Codex installation. The older Codex runtime is retained for existing bindings; it is not a prerequisite for direct login. Fresh browser consent and real direct inference remain required before declaring this connection work validated.
+
+All app-authored buttons/fields/selectors/checks/switches/numbers/segments/disclosures now use shared Base UI primitives. Primary scroll areas use Base UI with matching native fallback styling for text/code/list overflow. Native snapshots confirm the primary controls; final compact-drawer and postinspection corrections still require reinspection.

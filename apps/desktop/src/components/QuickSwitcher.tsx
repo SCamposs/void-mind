@@ -56,7 +56,7 @@ export function QuickSwitcher() {
     <Dialog.Root open={open} onOpenChange={setOpen}><Dialog.Portal>
       <Dialog.Backdrop className="switcher-backdrop" />
       <Dialog.Popup className="quick-switcher" initialFocus={input} aria-label="Quick switcher">
-        <label><Search size={16} /><Input ref={input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Go to…" /><Button type="button" onClick={() => setOpen(false)} aria-label="Close"><X size={15} /></Button></label>
+        <label><Search size={16} /><Input aria-label="Search destinations and conversations" ref={input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Go to…" /><Button type="button" onClick={() => setOpen(false)} aria-label="Close"><X size={15} /></Button></label>
         <div className="switcher-results">
           <span>Navigate</span>
           {matchingDestinations.map((item) => <Button type="button" key={item.id} onClick={() => { setSection(item.id); setOpen(false); }}>{item.label}</Button>)}

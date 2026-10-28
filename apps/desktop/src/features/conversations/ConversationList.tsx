@@ -1,4 +1,4 @@
-import { Button, Input } from "../../components/Controls";
+import { Button, Input, ScrollSurface } from "../../components/Controls";
 import { Check, Edit3, Pin, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { searchConversations, type Conversation } from "@void-mind/mind-core";
@@ -69,7 +69,7 @@ export function ConversationList() {
           placeholder="Search conversations"
         />
       </label>
-      <div className="conversation-scroll">
+      <ScrollSurface className="conversation-scroll" label="Conversation history">
         {filtered.length === 0 ? (
           <p className="list-empty">{query ? "No matching conversations." : "No conversations yet."}</p>
         ) : (
@@ -147,7 +147,7 @@ export function ConversationList() {
             </section>
           ))
         )}
-      </div>
+      </ScrollSurface>
     </aside>
   );
 }

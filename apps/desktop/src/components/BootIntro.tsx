@@ -1,14 +1,13 @@
 import { Button } from "./Controls";
+import { Dialog } from "@base-ui/react/dialog";
 type BootIntroProps = {
   onSkip(): void;
 };
 
 export function BootIntro({ onSkip }: BootIntroProps) {
   return (
-    <section
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onSkip(); }}><Dialog.Portal><Dialog.Popup
       className="boot-intro"
-      role="dialog"
-      aria-modal="true"
       aria-label="VOID Mind introduction"
     >
       <div className="boot-light" aria-hidden="true" />
@@ -24,6 +23,6 @@ export function BootIntro({ onSkip }: BootIntroProps) {
       <Button className="boot-skip" type="button" onClick={onSkip} autoFocus>
         Skip intro
       </Button>
-    </section>
+    </Dialog.Popup></Dialog.Portal></Dialog.Root>
   );
 }

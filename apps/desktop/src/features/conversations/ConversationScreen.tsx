@@ -1,3 +1,4 @@
+import { Dialog } from "@base-ui/react/dialog";
 import { Button, CheckControl, ScrollSurface } from "../../components/Controls";
 import { BookOpen, Brain, MessageSquarePlus, PanelLeft, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,6 +22,7 @@ export function ConversationScreen() {
   const [contextOpen, setContextOpen] = useState(false);
   const compactHistory = useMediaQuery("(max-width: 1040px)");
   const scroll = useRef<HTMLDivElement>(null);
+  const followAnswer = useRef(true);
   const historyPanel = useRef<HTMLDivElement>(null);
   const historyToggle = useRef<HTMLButtonElement>(null);
   const contextPanel = useRef<HTMLElement>(null);
@@ -50,9 +52,17 @@ export function ConversationScreen() {
   const generating = state.generationState === "connecting" || state.generationState === "generating";
 
   useEffect(() => {
-    const element = scroll.current;
-    if (element) element.scrollTop = element.scrollHeight;
-  }, [conversation?.messages]);
+    followAnswer.current = true;
+  }, [conversation?.id]);
+  useEffect(() => {
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        const element = scroll.current;
+        if (element && followAnswer.current) element.scrollTop = element.scrollHeight;
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [conversation?.id, conversation?.messages]);
 
   useEffect(() => () => controller.current?.abort(), []);
 
@@ -60,39 +70,6 @@ export function ConversationScreen() {
     setHistoryOpen(false);
     setContextOpen(false);
   }, [state.selectedConversationId]);
-
-  useEffect(() => {
-    if (!compactHistory || !historyOpen) return;
-    historyPanel.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    const handleHistoryKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setHistoryOpen(false);
-        historyToggle.current?.focus();
-      } else if (event.key === "Tab") {
-        const focusable = [
-          ...Array.from(historyPanel.current?.querySelectorAll<HTMLElement>(
-            "button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex='-1'])"
-          ) ?? []),
-          historyToggle.current
-        ].filter((element): element is HTMLElement => Boolean(element));
-        const first = focusable[0];
-        const last = focusable.at(-1);
-        if (!first || !last) return;
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        } else if (!focusable.includes(document.activeElement as HTMLElement)) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
-    };
-    window.addEventListener("keydown", handleHistoryKeyDown);
-    return () => window.removeEventListener("keydown", handleHistoryKeyDown);
-  }, [compactHistory, historyOpen]);
 
   useEffect(() => {
     if (!contextOpen) return;
@@ -246,8 +223,7 @@ export function ConversationScreen() {
     void runGeneration();
   };
 
-  return (
-    <section className="conversation-screen">
+  const historyContent = (
       <div
         ref={historyPanel}
         className={`history-panel ${historyOpen ? "is-open" : ""}`}
@@ -256,14 +232,11 @@ export function ConversationScreen() {
       >
         <ConversationList />
       </div>
-      {compactHistory && historyOpen && (
-        <Button
-          className="history-scrim"
-          type="button"
-          onClick={() => setHistoryOpen(false)}
-          aria-label="Close conversation history"
-        />
-      )}
+  );
+
+  return (
+    <Dialog.Root open={compactHistory && historyOpen} onOpenChange={setHistoryOpen}><section className="conversation-screen">
+      {compactHistory ? <Dialog.Portal><Dialog.Backdrop className="history-scrim" /><Dialog.Popup render={historyContent} finalFocus={historyToggle} /></Dialog.Portal> : historyContent}
       <div className="conversation-main">
         <header className="conversation-header">
           <Button
@@ -319,7 +292,10 @@ export function ConversationScreen() {
             <p>Ask, explore, draft, study, or reason with the selected intelligence.</p>
           </div>
         ) : (
-          <ScrollSurface className="messages" viewportRef={scroll} label="Conversation messages">
+          <ScrollSurface className="messages" viewportRef={scroll} label="Conversation messages" onScroll={(event) => {
+            const element = event.currentTarget;
+            followAnswer.current = element.scrollHeight - element.scrollTop - element.clientHeight < 96;
+          }}>
             <div className="message-column">
               {conversation.messages.map((message, index) => (
                 <MessageItem
@@ -377,6 +353,6 @@ export function ConversationScreen() {
           onStop={stop}
         />
       </div>
-    </section>
+    </section></Dialog.Root>
   );
 }

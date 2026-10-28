@@ -56,6 +56,9 @@ jobs:
           npm run test
           npm run build
 
+      - name: Validate native application
+        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+
       - name: Build NSIS installer
         working-directory: apps/desktop
         run: npm run tauri -- build --bundles nsis
@@ -101,6 +104,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes \
             libayatana-appindicator3-dev \
+            libdbus-1-dev \
             librsvg2-dev \
             libwebkit2gtk-4.1-dev \
             patchelf
@@ -129,6 +133,9 @@ jobs:
           npm run typecheck
           npm run test
           npm run build
+
+      - name: Validate native application
+        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
 
       - name: Build Linux packages
         working-directory: apps/desktop

@@ -44,6 +44,8 @@ fn vault_error(_: impl std::fmt::Display) -> String {
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 struct Vault {
+    #[serde(skip)]
+    dirty: bool,
     host_id: String,
     accounts: Vec<Account>,
     active: Option<String>,
@@ -224,8 +226,12 @@ impl Connections {
                 .map_err(network_error)?;
             let tokens: TokenResponse = read_json(response).await?;
             apply_tokens(account, tokens, false)?;
-            // Never use the rotating replacement unless its complete record is saved.
+            vault.dirty = true;
+        }
+        // Retry a failed vault write before ever using its rotating replacement.
+        if vault.dirty {
             persist(vault).await?;
+            vault.dirty = false;
         }
         account_token(vault)
     }
@@ -235,6 +241,7 @@ fn account_token(vault: &Vault) -> Result<String, String> {
         .accounts
         .iter()
         .find(|a| Some(&a.client_id) == vault.active.as_ref())
+        .filter(|a| a.scopes.iter().any(|scope| scope == PLAN_SCOPE))
         .and_then(|a| a.access_token.clone())
         .ok_or("Sign in to ChatGPT again.".into())
 }
@@ -687,6 +694,12 @@ async fn finish_login(
     manager.cancel_requests().await;
     let mut guard = manager.vault().await?;
     let mut next = guard.as_ref().unwrap().clone();
+    if let Some(saved) = next.accounts.iter().find(|a| a.client_id == client_id) {
+        if saved.subject != account.subject {
+            return Err("The ChatGPT registration identity did not match.".into());
+        }
+        account.welcomed = saved.welcomed;
+    }
     next.accounts.retain(|a| a.client_id != client_id);
     next.accounts.push(account);
     next.active = Some(client_id);
@@ -1064,6 +1077,77 @@ pub async fn connection_cancel(
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn account() -> Account {
+        Account {
+            client_id: "issued-client".into(),
+            subject: "verified-subject".into(),
+            email: Some("test@example.invalid".into()),
+            access_token: Some("test-access-secret".into()),
+            refresh_token: Some("test-refresh-secret".into()),
+            id_token: Some("test-id-secret".into()),
+            expires_at: now() + 3600,
+            earliest_refresh_at: 0,
+            scopes: vec![PLAN_SCOPE.into()],
+            welcomed: false,
+        }
+    }
+    #[test]
+    fn status_never_serializes_credentials_or_host_identity() {
+        let vault = Vault {
+            host_id: "private-host-id".into(),
+            accounts: vec![account()],
+            active: Some("issued-client".into()),
+            api_key: Some("test-api-secret".into()),
+            dirty: true,
+        };
+        let safe = serde_json::to_string(&snapshot(&vault)).unwrap();
+        for secret in [
+            "test-access-secret",
+            "test-refresh-secret",
+            "test-id-secret",
+            "test-api-secret",
+            "private-host-id",
+            "verified-subject",
+        ] {
+            assert!(!safe.contains(secret));
+        }
+        assert!(snapshot(&vault).welcome_pending);
+        assert!(!serde_json::to_string(&vault).unwrap().contains("dirty"));
+    }
+    #[test]
+    fn renewal_replaces_scopes_and_tokens_and_revoked_permission_cannot_infer() {
+        let mut account = account();
+        apply_tokens(
+            &mut account,
+            TokenResponse {
+                access_token: "new-access".into(),
+                refresh_token: Some("rotating-refresh".into()),
+                id_token: None,
+                token_type: "Bearer".into(),
+                expires_in: 3600,
+                scope: Some("openid".into()),
+                earliest_refresh_at: Some(123),
+            },
+            false,
+        )
+        .unwrap();
+        assert_eq!(account.refresh_token.as_deref(), Some("rotating-refresh"));
+        assert_eq!(account.earliest_refresh_at, 123);
+        assert_eq!(account.scopes, vec!["openid"]);
+        let vault = Vault {
+            accounts: vec![account],
+            active: Some("issued-client".into()),
+            ..Vault::default()
+        };
+        assert!(account_token(&vault).is_err());
+        let mut attempt = attempt();
+        attempt.previous = Some(vault.accounts[0].clone());
+        assert!(callback(
+            "GET /auth/callback?state=secret-state&code=x&client_id=another-client HTTP/1.1",
+            &attempt
+        )
+        .is_err());
+    }
     fn attempt() -> LoginAttempt {
         LoginAttempt {
             state: "secret-state".into(),

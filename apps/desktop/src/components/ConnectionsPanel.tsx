@@ -1,4 +1,4 @@
-import { Button, Input } from "./Controls";
+import { Button, Input, Disclosure } from "./Controls";
 import { useRef, useState } from "react";
 import { connectionAvailable } from "@void-mind/providers";
 import { disconnectConnection, refreshConnections, saveAPIKey, selectChatGPTAccount, openUsage } from "../lib/connections-bridge";
@@ -10,7 +10,6 @@ export function ConnectionsPanel() {
   const state = useMindStore();
   const { login, beginLogin, cancelLogin } = useChatGPTLogin();
   const input = useRef<HTMLInputElement>(null);
-  const [keyOpen, setKeyOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
   const status = state.connections;
@@ -39,9 +38,8 @@ export function ConnectionsPanel() {
     {active?.connected && !active.planAuthorized && <p className="status-message" role="status">Signed in. ChatGPT plan use has not been authorized; continue with ChatGPT to review permissions.</p>}
     {login.message && <p className={`status-message is-${login.state}`} role={login.state === "error" ? "alert" : "status"}>{login.message}</p>}
     {login.loginId && <Button className="text-button" type="button" onClick={() => void cancelLogin()}>Cancel sign-in</Button>}
-    <div className="connection-alternative">
-      <Button className="text-button" type="button" aria-expanded={keyOpen} aria-controls="api-key-connection" disabled={busy} onClick={() => setKeyOpen(!keyOpen)}>{status?.apiConnected ? "Manage API key" : "Use API key"}</Button>
-      {keyOpen && <form id="api-key-connection" className="field-stack" onSubmit={(event) => {
+    <Disclosure className="connection-alternative" title={status?.apiConnected ? "Manage API key" : "Use API key"} disabled={busy}>
+      <form className="field-stack" onSubmit={(event) => {
         event.preventDefault(); const key = input.current?.value ?? "";
         if (input.current) input.current.value = "";
         void act(async () => { await saveAPIKey(key); useMindStore.getState().setDefaultPreference({ providerId: "openai-api" }); }, "OpenAI API connected. Choose a model below.");
@@ -50,8 +48,8 @@ export function ConnectionsPanel() {
         <div className="button-row"><Button className="secondary-button" type="submit" disabled={busy}>{working ? "Connecting…" : status?.apiConnected ? "Replace key" : "Connect API key"}</Button>
           {status?.apiConnected && <><Button className="text-button" type="button" disabled={busy} onClick={() => state.setDefaultPreference({ providerId: "openai-api" })}>Use OpenAI API</Button><Button className="text-button" type="button" disabled={busy} onClick={() => void act(() => disconnectConnection("openai-api"), "API key removed from this device.")}>Remove key</Button></>}
         </div>
-      </form>}
-    </div>
+      </form>
+    </Disclosure>
     {message && <p className={`status-message is-${message.error ? "error" : "success"}`} role={message.error ? "alert" : "status"}>{message.text}</p>}
     <p className="runtime-detail">Messages and selected context are sent to OpenAI when either connection is active.</p>
     <Button className="text-button" type="button" onClick={() => void act(openUsage, "Usage settings opened in your browser.")}>Manage ChatGPT usage</Button>
