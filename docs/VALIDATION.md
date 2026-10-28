@@ -12,6 +12,8 @@ Observed in the first branded NSIS build: correct VOID icon and black welcome su
 
 Windows visual automation was stopped using the physical Escape key. Do not treat compiled configuration as visual approval.
 
+A subsequent inspection launched the branded setup and retrieved its accessibility tree, including VOID branding and navigation controls. Screenshot capture returned desktop imagery instead of setup content. Activation failed twice with `failed to activate captured window`, including after refreshing the returned window selection. No visual approval was inferred. The preview was subsequently terminated after its exact executable path was checked: it held the output installer open and caused packaging to fail with access denied. The shared root-dialog theme now also runs during uninstaller GUI initialization.
+
 ## Technical checks
 
 Knowledge validation additionally covers the exact 512 KB boundary, oversized input, invalid UTF-8, whitespace-only content, traversal identifiers, idempotent managed-copy cleanup and original-source preservation. Import reads are bounded even if the source grows after metadata inspection; reported size reflects the bytes actually imported.

@@ -8,8 +8,9 @@
 !define MUI_FINISHPAGE_LINK_COLOR "E8EDF4"
 !define MUI_ABORTWARNING
 !define MUI_CUSTOMFUNCTION_GUIINIT VoidMindGuiInit
+!define MUI_CUSTOMFUNCTION_UNGUIINIT un.VoidMindGuiInit
 
-Function VoidMindGuiInit
+!macro VOID_MIND_THEME_DIALOG
   ; MUI colors the page surface, while the root dialog owns the navigation footer.
   ; Color both so the setup reads as one uninterrupted VOID surface.
   SetCtlColors $HWNDPARENT E8EDF4 000000
@@ -25,4 +26,12 @@ Function VoidMindGuiInit
 
   GetDlgItem $0 $HWNDPARENT 1034
   SetCtlColors $0 8A9099 000000
+!macroend
+
+Function VoidMindGuiInit
+  !insertmacro VOID_MIND_THEME_DIALOG
+FunctionEnd
+
+Function un.VoidMindGuiInit
+  !insertmacro VOID_MIND_THEME_DIALOG
 FunctionEnd
