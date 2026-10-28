@@ -15,7 +15,7 @@ $source = [System.Drawing.Image]::FromFile($sourcePath)
 function New-VoidBitmap([int]$width, [int]$height, [string]$path, [int]$logoSize, [int]$logoX, [int]$logoY, [bool]$line) {
   $bitmap = [System.Drawing.Bitmap]::new($width, $height, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
   $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-  $graphics.Clear([System.Drawing.Color]::Black)
+  $graphics.Clear($(if ($line) { [System.Drawing.Color]::Black } else { [System.Drawing.Color]::White }))
   $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
   $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
   $graphics.DrawImage($source, $logoX, $logoY, $logoSize, $logoSize)

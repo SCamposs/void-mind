@@ -183,7 +183,7 @@ The native frame is replaced by an integrated VOID title bar. The header's empty
 
 ### Windows Installer
 
-The NSIS installer is part of the product surface. It uses the exact VOID mark for its executable, header, welcome, finish, and uninstaller identity; a black field; ice-white text; dark directory/details fields; and VOID-owned branding text. Generated artwork is reproducible from the canonical icon through `scripts/generate-installer-art.ps1`.
+The NSIS installer uses the exact VOID mark for its executable, header, welcome/finish sidebar, and uninstaller identity. Following visual inspection, the user approved a restrained branding boundary: VOID artwork and icons with native Windows page bodies, controls, typography and chrome. Do not reinstate a full dark NSIS skin. Generated artwork is reproducible through `scripts/generate-installer-art.ps1`. The application's own integrated VOID titlebar is a separate design surface.
 
 ### Primitives
 

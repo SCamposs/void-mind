@@ -18,7 +18,7 @@ Quiet, luminous, deliberate.
 
 The product should feel capable and private. It should support concentration without looking sterile, theatrical, or technical for its own sake.
 
-The product boundary includes desktop chrome and distribution. A generic operating-system title bar or stock NSIS presentation is not considered finished when the application itself carries a deliberate VOID language.
+The product boundary includes desktop chrome and distribution. The app uses an integrated VOID titlebar. For distribution, the approved direction is a native Windows installer with VOID header/sidebar artwork and icons; a full NSIS dark skin is intentionally excluded after visual inspection.
 
 ## Anti-references
 

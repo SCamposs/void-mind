@@ -54,7 +54,7 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 
 ## Additional user-requested gates
 
-- Complete VOID installer presentation: native titlebar/system typography and unverified root-dialog/control styling remain open.
+- Installer scope updated by the user after visual inspection: VOID header/sidebar/icons, native page bodies and controls. Full dark NSIS styling is no longer a requirement.
 - Inspect setup/uninstall pages and titlebar actions after the Windows capture/activation failure is resolved.
 - Publish alpha.1 only after required gates; prepared commits and local setup are not a published release.
 - Transfer design to sibling VOID only in a subsequent authorized phase. Current phase keeps it read-only.
