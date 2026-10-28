@@ -21,6 +21,8 @@ Local conversations persist the returned Codex thread ID. Start and resume reque
 
 The local protocol probe accepted the profile shape, but an elevated Windows process rejected restricted filesystem access because its sandbox required effective root read access. Mind retains the restrictive policy and reports failure; it does not silently broaden access. End-to-end account inference and filesystem isolation still require validation in a normal, non-elevated desktop session.
 
+An explicit no-inference reproduction is available as `node scripts/probe-codex.mjs <codex.exe> <neutral-workspace>`. It performs initialization, model discovery and ephemeral thread creation with the same minimal filesystem/network policy, without printing account data or submitting a turn. On this machine both installed runtimes initialized and returned a model catalog. The npm runtime failed thread creation while loading environment instructions with `CreateProcessWithLogonW failed: 267`; the desktop runtime failed because the elevated Windows sandbox required effective `:root` read access. The exact runtime/setup compatibility fix remains unresolved; broad root access is not an accepted workaround.
+
 The active response profile is combined with the visible Workspace instructions and explicitly selected Knowledge sources before a thread starts or resumes. This keeps response controls consistent across Codex and llama.cpp without creating hidden context.
 
 ## Models and errors

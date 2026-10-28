@@ -644,7 +644,7 @@ fn error_category(message: &str) -> &'static str {
 
 fn user_error_message(message: &str) -> String {
     match error_category(message) {
-        "sandboxUnavailable" => "Codex could not create the restricted conversation sandbox. Run VOID Mind without administrator privileges and try again. Access was not broadened.".into(),
+        "sandboxUnavailable" => "Codex could not create the restricted conversation sandbox on this device. Check the Codex sandbox setup and try again. Access was not broadened.".into(),
         "runtimeMissing" => {
             "Install Codex or make it available to VOID Mind, then try again.".into()
         }
