@@ -26,8 +26,8 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 | 20 | Partial | Six llama provider tests pass; real GGUF inference not rerun. |
 | 21 | Verified regression | Lab untouched in this checkpoint; Ruff and all six Python tests pass. |
 | 22 | Partial | Home implemented and seen natively; latest acceptance pending. |
-| 23 | Source reviewed | ChatGPT primary onboarding action; local setup currently reached via Set up later. |
-| 24 | Source reviewed | Set up later completes onboarding without provider; native first-run test pending. |
+| 23 | Source reviewed | Continue with ChatGPT is primary; Use a local model opens Intelligence with explicit local preference. Native first-run test pending. |
+| 24 | Source reviewed | Explore first completes onboarding without a provider and opens Home; native first-run test pending. |
 | 25 | Partial | CRUD/detail/preferences exist; direct chat list/create added; native acceptance pending. |
 | 26 | Source + tests | Workspace ownership persisted; draft reuse and deletion preservation tests pass. |
 | 27 | Source + tests | Workspace instructions assembled for Codex/local; live response effect unverified. |

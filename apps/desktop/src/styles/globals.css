@@ -1687,6 +1687,8 @@ summary {
 .onboarding-points { display: grid; gap: 8px; margin: 28px 0; color: var(--mind-text); font-size: 0.75rem; text-align: left; }
 .onboarding-points span { display: flex; align-items: center; gap: 8px; }
 .onboarding-actions { display: flex; gap: 9px; }
+.onboarding-alternatives { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; margin-top: 12px; }
+.onboarding-availability { margin-top: 18px !important; color: var(--mind-faint) !important; font-size: 0.72rem; }
 .onboarding-status { margin-top: 18px !important; color: var(--mind-muted) !important; font-size: 0.72rem; }
 .onboarding-status.is-error { color: var(--mind-error) !important; }
 
