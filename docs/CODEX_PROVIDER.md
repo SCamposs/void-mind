@@ -17,7 +17,9 @@ Malformed lines, timeouts, exits, and unsupported server requests become bounded
 
 ## Conversation safety
 
-Local conversations persist the returned Codex thread ID. Start and resume requests use a neutral app-data directory, `approvalPolicy: never`, `sandbox: read-only`, and general-purpose instructions. Turns repeat the no-approval/read-only policy and disable network access for sandboxed tools. The product exposes no tool or approval workflow and rejects server-initiated requests.
+Local conversations persist the returned Codex thread ID. Start and resume requests use a neutral app-data directory, `approvalPolicy: never`, and the named `void_mind` default-permissions profile. That profile grants read access only to the minimal runtime and neutral workspace, with network disabled. Turns preserve that profile instead of overriding it with the broader legacy read-only sandbox. The product exposes no tool or approval workflow and rejects server-initiated requests.
+
+The local protocol probe accepted the profile shape, but an elevated Windows process rejected restricted filesystem access because its sandbox required effective root read access. Mind retains the restrictive policy and reports failure; it does not silently broaden access. End-to-end account inference and filesystem isolation still require validation in a normal, non-elevated desktop session.
 
 The active response profile is combined with the visible Workspace instructions and explicitly selected Knowledge sources before a thread starts or resumes. This keeps response controls consistent across Codex and llama.cpp without creating hidden context.
 

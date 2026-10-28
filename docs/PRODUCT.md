@@ -18,6 +18,8 @@ Quiet, luminous, deliberate.
 
 The product should feel capable and private. It should support concentration without looking sterile, theatrical, or technical for its own sake.
 
+The product boundary includes desktop chrome and distribution. A generic operating-system title bar or stock NSIS presentation is not considered finished when the application itself carries a deliberate VOID language.
+
 ## Anti-references
 
 VOID Mind must not resemble:

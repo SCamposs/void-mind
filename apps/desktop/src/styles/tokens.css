@@ -15,7 +15,8 @@
   --mind-cyan: oklch(78% 0.14 215);
   --mind-blue: oklch(67% 0.17 265);
 
-  --font-body: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+  --font-display: "Urbanist Variable", Urbanist, "Segoe UI Variable", system-ui, sans-serif;
+  --font-body: Barlow, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   --radius-sm: 6px;
   --radius-md: 10px;

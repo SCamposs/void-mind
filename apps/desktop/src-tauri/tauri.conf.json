@@ -28,6 +28,7 @@
         "minWidth": 720,
         "minHeight": 560,
         "resizable": true,
+        "decorations": false,
         "backgroundColor": "#000000"
       }
     ]
@@ -36,6 +37,7 @@
     "active": true,
     "targets": "all",
     "publisher": "SCamposs",
+    "copyright": "VOID Mind · SCamposs",
     "shortDescription": "A standalone intelligence environment for focused conversations and contextual work.",
     "icon": [
       "icons/32x32.png",
@@ -46,7 +48,11 @@
     "windows": {
       "nsis": {
         "installerIcon": "icons/icon.ico",
-        "uninstallerIcon": "icons/icon.ico"
+        "uninstallerIcon": "icons/icon.ico",
+        "headerImage": "windows/installer-header.bmp",
+        "sidebarImage": "windows/installer-sidebar.bmp",
+        "uninstallerHeaderImage": "windows/installer-header.bmp",
+        "installerHooks": "windows/installer-theme.nsh"
       }
     }
   }

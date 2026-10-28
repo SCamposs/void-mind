@@ -14,6 +14,7 @@ import { useMediaQuery } from "../lib/use-media-query";
 import { useMindStore, type AppSection } from "../stores/mind-store";
 import { VoidMark } from "./VoidMark";
 import { QuickSwitcher } from "./QuickSwitcher";
+import { WindowControls } from "./WindowControls";
 
 const items: Array<{
   id: AppSection;
@@ -73,6 +74,7 @@ export function AppShell({ children }: PropsWithChildren) {
   return (
     <div className="app-shell">
       <header className="app-header">
+        <div className="titlebar-drag-region" data-tauri-drag-region aria-hidden="true" />
         <button
           ref={menuButton}
           className="icon-button mobile-menu"
@@ -93,11 +95,14 @@ export function AppShell({ children }: PropsWithChildren) {
           <VoidMark />
           <span>VOID <strong>MIND</strong></span>
         </button>
-        <span className="privacy-note">
-          {selectedProviderId === "openai-codex"
-            ? account?.state === "connected" ? "ChatGPT connected" : "ChatGPT not connected"
-            : "Local runtime"}
-        </span>
+        <div className="app-header-actions">
+          <span className="privacy-note">
+            {selectedProviderId === "openai-codex"
+              ? account?.state === "connected" ? "ChatGPT connected" : "ChatGPT not connected"
+              : "Local runtime"}
+          </span>
+          <WindowControls />
+        </div>
       </header>
 
       <div className="app-body">
@@ -124,7 +129,7 @@ export function AppShell({ children }: PropsWithChildren) {
             ))}
           </div>
         </nav>
-        {open && (
+        {compact && open && (
           <button
             type="button"
             className="nav-scrim"

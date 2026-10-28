@@ -1,1 +1,1 @@
-{"main":{"identifier":"main","description":"Minimal permissions for the VOID Mind main window.","local":true,"windows":["main"],"permissions":["core:default","dialog:allow-open"]}}
+{"main":{"identifier":"main","description":"Minimal permissions for the VOID Mind main window.","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-close","core:window:allow-minimize","core:window:allow-toggle-maximize","core:window:allow-start-dragging","dialog:allow-open"]}}

@@ -15,13 +15,13 @@ colors:
   disruption-cyan: "oklch(78% 0.14 215)"
 typography:
   title:
-    fontFamily: "Segoe UI Variable, Segoe UI, Inter, system-ui, sans-serif"
+    fontFamily: "Urbanist Variable, Urbanist, Segoe UI Variable, system-ui, sans-serif"
     fontSize: "1.45rem"
     fontWeight: 520
     lineHeight: 1.25
     letterSpacing: "-0.025em"
   body:
-    fontFamily: "Segoe UI Variable, Segoe UI, Inter, system-ui, sans-serif"
+    fontFamily: "Barlow, Segoe UI Variable, Segoe UI, system-ui, sans-serif"
     fontSize: "0.94rem"
     fontWeight: 400
     lineHeight: 1.72
@@ -109,13 +109,13 @@ The palette is overwhelmingly achromatic. Cold chroma appears in the ice-white i
 
 ## Typography
 
-**Display Font:** Segoe UI Variable (with Inter and system sans fallbacks)
+**Display Font:** Urbanist Variable (bundled locally, with system sans fallbacks)
 
-**Body Font:** Segoe UI Variable (with Inter and system sans fallbacks)
+**Body / Control Font:** Barlow (bundled locally, with system sans fallbacks)
 
 **Label/Mono Font:** Cascadia Code (with SFMono-Regular and Consolas fallbacks)
 
-**Character:** Quiet, contemporary, and optimized for sustained reading. The same proportional family carries headings and prose; mono identifies short system facts and code without turning the product into a terminal.
+**Character:** Urbanist gives the VOID identity and headings their precise geometric voice. Barlow keeps prose and controls open, warm, and readable. Mono identifies short system facts and code without turning the product into a terminal.
 
 ### Hierarchy
 
@@ -176,6 +176,18 @@ Conversation messages are not cards. Role, spacing, brightness, and a faint sepa
 ### Navigation
 
 The primary navigation is a quiet left rail with standard icons and labels. Active state uses one raised near-black tone and glacial-white content. At narrow widths it becomes an off-canvas drawer with an accessible close scrim. Conversation history independently collapses at medium widths.
+
+### Desktop Chrome
+
+The native frame is replaced by an integrated VOID title bar. The header's empty field is the drag region; identity, status, navigation, and window controls remain interactive above it. Minimize and maximize are quiet line controls. Close uses disruption red only on hover. The application must never fall back to a visually unrelated Windows frame in distributed builds.
+
+### Windows Installer
+
+The NSIS installer is part of the product surface. It uses the exact VOID mark for its executable, header, welcome, finish, and uninstaller identity; a black field; ice-white text; dark directory/details fields; and VOID-owned branding text. Generated artwork is reproducible from the canonical icon through `scripts/generate-installer-art.ps1`.
+
+### Primitives
+
+Interactive popovers and selects are assembled from Base UI primitives behind local components. Accessibility and positioning behavior come from the primitive; styling, API shape, motion, and product semantics remain source-owned in this repository.
 
 ### Boot Identity
 

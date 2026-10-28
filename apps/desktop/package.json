@@ -10,6 +10,9 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@base-ui/react": "^1.9.0",
+    "@fontsource-variable/urbanist": "^5.3.0",
+    "@fontsource/barlow": "^5.3.0",
     "@tauri-apps/api": "^2.8.0",
     "@tauri-apps/plugin-dialog": "^2.4.0",
     "@void-mind/mind-core": "*",
