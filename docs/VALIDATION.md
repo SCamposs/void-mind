@@ -14,6 +14,8 @@ Windows visual automation was stopped using the physical Escape key. Do not trea
 
 ## Technical checks
 
+Knowledge validation additionally covers the exact 512 KB boundary, oversized input, invalid UTF-8, whitespace-only content, traversal identifiers, idempotent managed-copy cleanup and original-source preservation. Import reads are bounded even if the source grows after metadata inspection; reported size reflects the bytes actually imported.
+
 The visual checkpoint passed ESLint, TypeScript, production Vite build, 37 JavaScript tests, Rust formatting, and 10 Rust tests. Tauri produced Windows MSI and NSIS packages before the last small sidebar fix; the latest NSIS rebuild incorporates that correction. The Vite bundle-size warning remains advisory.
 
 ## Remaining phase gates
