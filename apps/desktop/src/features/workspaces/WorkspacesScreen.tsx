@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowRight, MessageSquareText, Plus, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useMindStore } from "../../stores/mind-store";
 import { deleteKnowledgeFiles } from "../../lib/knowledge-bridge";
@@ -7,6 +7,9 @@ import { SelectControl } from "../../components/SelectControl";
 export function WorkspacesScreen() {
   const state = useMindStore();
   const workspace = state.workspaces.find((item) => item.id === state.selectedWorkspaceId);
+  const conversations = state.conversations
+    .filter((item) => item.workspaceId === workspace?.id)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -121,6 +124,21 @@ export function WorkspacesScreen() {
               ) : <button className="danger-button" type="button" disabled={deleting} onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Delete workspace</button>}
             </div>
             {error && <p className="inline-error" role="alert">{error}</p>}
+            <section className="home-panel" aria-label="Workspace conversations">
+              <header>
+                <h2>Conversations</h2>
+                <button type="button" disabled={deleting} onClick={() => state.createConversation(workspace.id)}>
+                  <Plus size={13} /> New conversation
+                </button>
+              </header>
+              {conversations.length ? conversations.map((conversation) => (
+                <button className="home-row" type="button" key={conversation.id} onClick={() => state.selectConversation(conversation.id)}>
+                  <MessageSquareText size={15} />
+                  <span><strong>{conversation.title}</strong><small>{new Date(conversation.updatedAt).toLocaleDateString()}</small></span>
+                  <ArrowRight size={14} />
+                </button>
+              )) : <p className="section-empty">Start a conversation with this workspace’s instructions and preferred intelligence.</p>}
+            </section>
           </div>
         ) : <div className="workspace-blank"><h2>A room for ongoing work.</h2><p>Create a workspace to group conversations, instructions, and explicit knowledge sources.</p></div>}
       </div>

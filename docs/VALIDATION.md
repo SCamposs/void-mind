@@ -20,6 +20,8 @@ Knowledge validation additionally covers the exact 512 KB boundary, oversized in
 
 Codex provider regression coverage includes Stop after thread binding, Stop while turn creation is pending, existing-thread resume, and filtering events from other threads/turns. A turn returned after cancellation is explicitly interrupted before the stream exits. These bridge tests verify orchestration, not real account inference or operating-system sandbox isolation.
 
+Workspace detail now lists its conversations and offers direct creation. Reusing an empty draft in a different workspace updates ownership and clears prior explicit provider/source context, without creating a duplicate empty conversation. Store regression coverage verifies that transition.
+
 The visual checkpoint passed ESLint, TypeScript, production Vite build, 37 JavaScript tests, Rust formatting, and 10 Rust tests. Tauri produced Windows MSI and NSIS packages before the last small sidebar fix; the latest NSIS rebuild incorporates that correction. The Vite bundle-size warning remains advisory.
 
 ## Remaining phase gates

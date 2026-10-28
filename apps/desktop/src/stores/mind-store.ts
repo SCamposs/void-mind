@@ -128,6 +128,11 @@ export const useMindStore = create<MindStore>()((set) => ({
       if (current?.messages.length === 0) {
         conversationId = current.id;
         return {
+          conversations: state.conversations.map((conversation) =>
+            conversation.id === current.id && conversation.workspaceId !== workspaceId
+              ? { ...conversation, workspaceId, providerOverride: undefined, providerBinding: undefined, contextKnowledgeIds: [] }
+              : conversation
+          ),
           selectedConversationId: current.id,
           section: "conversations",
           navigationOpen: false

@@ -56,7 +56,7 @@ describe("mind store streaming updates", () => {
       navigationOpen: true
     });
 
-    const conversationId = useMindStore.getState().createConversation("workspace-ignored");
+    const conversationId = useMindStore.getState().createConversation();
 
     const state = useMindStore.getState();
     expect(conversationId).toBe(empty.id);
@@ -79,6 +79,22 @@ describe("mind store streaming updates", () => {
     expect(conversationId).not.toBe(existing.id);
     expect(state.conversations).toHaveLength(2);
     expect(state.selectedConversationId).toBe(conversationId);
+  });
+
+  it("reuses an empty draft in the requested workspace without carrying old context", () => {
+    const empty = {
+      ...createConversation("New conversation"),
+      workspaceId: "old-workspace",
+      contextKnowledgeIds: ["old-source"],
+      providerOverride: { providerId: "old-provider" }
+    };
+    useMindStore.setState({ conversations: [empty], selectedConversationId: empty.id });
+    const id = useMindStore.getState().createConversation("new-workspace");
+    const state = useMindStore.getState();
+    expect(id).toBe(empty.id);
+    expect(state.conversations).toHaveLength(1);
+    expect(state.conversations[0]).toMatchObject({ workspaceId: "new-workspace", contextKnowledgeIds: [] });
+    expect(state.conversations[0].providerOverride).toBeUndefined();
   });
 
   it("does not silently select a model from another provider when a catalog disappears", () => {
