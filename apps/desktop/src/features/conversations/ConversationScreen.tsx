@@ -233,7 +233,7 @@ export function ConversationScreen() {
 
   return (
     <Dialog.Root open={compactHistory && historyOpen} onOpenChange={setHistoryOpen}><section className="conversation-screen">
-      {compactHistory ? <Dialog.Portal><Dialog.Backdrop className="history-scrim" /><Dialog.Popup render={historyContent} finalFocus={historyToggle} /></Dialog.Portal> : historyContent}
+      {compactHistory ? <Dialog.Portal><Dialog.Backdrop className="history-scrim" /><Dialog.Popup render={historyContent} finalFocus={historyToggle} aria-label="Conversation history" /></Dialog.Portal> : historyContent}
       <div className="conversation-main">
         <header className="conversation-header">
           <Button

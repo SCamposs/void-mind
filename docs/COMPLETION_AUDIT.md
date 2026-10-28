@@ -28,28 +28,28 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 22 | Partial | Home implemented and seen natively; latest acceptance pending. |
 | 23 | Source reviewed | Continue with ChatGPT is primary; Use a local model opens Intelligence with explicit local preference. Native first-run test pending. |
 | 24 | Source reviewed | Explore first completes onboarding without a provider and opens Home; native first-run test pending. |
-| 25 | Partial | CRUD/detail/preferences exist; direct chat list/create added; native acceptance pending. |
-| 26 | Source + tests | Workspace ownership persisted; draft reuse and deletion preservation tests pass. |
-| 27 | Source + tests | Workspace instructions assembled for Codex/local; live response effect unverified. |
-| 28 | Source + tests | Conversation/workspace/global resolution tested; interactive preference acceptance pending. |
-| 29 | Source + tests | Rust imports UTF-8 md/txt up to 512 KB; validation/cleanup tests pass. |
+| 25 | Native creation/editing/persistence observed; deletion tested | Native creation/name/description/instructions/preference, navigation and app-restart retention passed. Product-surface partial-cleanup/retry tests preserve conversations. Native deletion remains open. |
+| 26 | Native workspace conversation observed | Workspace-created draft inherited its preference and delivered a real response; draft promotion/source isolation and deletion preservation tests pass. |
+| 27 | Native direct instruction effect observed | Real workspace response followed the configured language, sentence and prefix instruction. Assembly for other providers remains covered structurally. |
+| 28 | Native workspace preference observed | Keyboard selection/save used a different catalog model from the global default; chat showed workspace resolution. Full conversation-override native walkthrough remains pending. |
+| 29 | Native Markdown import observed + tests | Explicit native selection created a managed item with metadata and full preview. UTF-8 md/txt limits/cleanup covered by Rust tests; native deletion remains unverified. |
 | 30 | Source reviewed | Explicit file dialog/import only; no automatic scan path. |
-| 31 | Source reviewed | Selected source checkboxes and remote context note visible; inspector acceptance pending. |
-| 32 | Partial | Context inspector exists; ready-source selection and keyboard acceptance pending. |
+| 31 | Native selection and use observed | Source checkbox/count reflected explicit selection; response returned facts unique to that source. A new draft did not implicitly retain the selection. |
+| 32 | Native inspector observed | Instructions/source names visible; selection updated count and survived app restart; Escape closed the panel and returned focus. Compact conversation renders its Context trigger. |
 | 33 | Tests pass | Resolution precedence and unavailable-provider behavior covered. |
 | 34 | Partial | Black/ice tokens, canonical mark, Urbanist/Barlow implemented; final visual acceptance pending. |
 | 35 | Partial | Source preserves black surfaces; final all-surface native QA pending. |
 | 36 | Source reviewed | Short boot displacement and reduced-motion rules; motion inspection pending. |
 | 37 | Partial | Proportional Barlow reading column implemented; long-form native QA pending. |
-| 38 | Partial | Shortcuts/drawers/focus implemented; full keyboard walkthrough pending. |
+| 38 | Partial native keyboard walkthrough | Ctrl+N draft, End/Enter model selection, Escape Context and focus return observed; Ctrl+K observed earlier. Compact navigation/history drawers isolate background accessibility; history Escape works. Final full walkthrough remains pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Verified checks | 59 JS tests, 23 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
+| 41 | Verified checks | All 63 JS tests pass together; TypeScript/lint pass after new surface tests. 23 Rust tests passed previously; native source unchanged in this checkpoint. |
 | 42 | Windows build passed | Production and NSIS rebuild with MXC passed; Linux release unverified. |
 | 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
-| 46 | Partial native QA | Legacy inference/continuation/Stop passed. Direct fresh login, catalog, inference, incremental streaming, Stop, post-Stop contextual continuation and persisted conversation/account after restart observed. Refresh/logout and a new request after restart remain pending. |
+| 46 | Partial native QA | Legacy inference/continuation/Stop passed. Direct fresh login, catalog, inference, incremental streaming, Stop, continuation, restart recovery and a new workspace/source request after restart observed. Refresh/logout remain pending. |
 | 47 | Documented | CODEX_PROVIDER.md and VALIDATION.md record runtime/sandbox and visual automation limits. |
 
 ## Additional user-requested gates
