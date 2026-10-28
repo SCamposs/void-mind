@@ -546,7 +546,7 @@ summary {
   font-size: 0.64rem;
 }
 
-.history-toggle {
+.icon-button.history-toggle {
   display: none;
 }
 
@@ -1907,7 +1907,7 @@ summary {
     transform: translateX(0);
   }
 
-  .history-toggle {
+  .icon-button.history-toggle {
     display: inline-flex;
   }
 }

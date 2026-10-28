@@ -22,6 +22,8 @@ Codex provider regression coverage includes Stop after thread binding, Stop whil
 
 Workspace detail now lists its conversations and offers direct creation. Reusing an empty draft in a different workspace updates ownership and clears prior explicit provider/source context, without creating a duplicate empty conversation. Store regression coverage verifies that transition.
 
+Explicit conversation context is assembled centrally with a 64,000-character combined budget. Tests cover workspace ownership, selected/ready source filtering, missing workspace, exact budget boundary and overflow rejection. Overflow is reported before provider generation begins, without silent truncation. The conversation history toggle also follows the responsive-only visibility and scrim rule used by primary navigation.
+
 The visual checkpoint passed ESLint, TypeScript, production Vite build, 37 JavaScript tests, Rust formatting, and 10 Rust tests. Tauri produced Windows MSI and NSIS packages before the last small sidebar fix; the latest NSIS rebuild incorporates that correction. The Vite bundle-size warning remains advisory.
 
 ## Remaining phase gates

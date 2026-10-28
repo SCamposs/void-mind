@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveProviderPreference } from "@void-mind/mind-core";
 import { CodexProvider, LlamaServerProvider, type MindProvider } from "@void-mind/providers";
 import { codexBridge } from "../../lib/codex-bridge";
+import { conversationContext } from "../../lib/conversation-context";
 import { availableProviderIds } from "../../lib/provider-availability";
 import { useMindStore, activeSettings } from "../../stores/mind-store";
 import { useMediaQuery } from "../../lib/use-media-query";
@@ -128,6 +129,14 @@ export function ConversationScreen() {
       return;
     }
 
+    let contextInstructions: string;
+    try {
+      contextInstructions = conversationContext(current, currentWorkspace, snapshot.knowledge);
+    } catch (error) {
+      snapshot.setGeneration("error", error instanceof Error ? error.message : "Workspace context could not be prepared.");
+      return;
+    }
+
     const assistantId = snapshot.appendMessage("assistant", "", "streaming");
     activeAssistantId.current = assistantId;
     const abort = new AbortController();
@@ -138,13 +147,6 @@ export function ConversationScreen() {
     provider.current = activeProvider;
     snapshot.setGeneration("connecting");
     let content = "";
-    const selectedKnowledge = snapshot.knowledge.filter(
-      (item) => current.contextKnowledgeIds?.includes(item.id) && item.workspaceId === current.workspaceId
-    );
-    const contextInstructions = [
-      currentWorkspace?.instructions,
-      ...selectedKnowledge.map((item) => `Knowledge source: ${item.title}\n${item.content}`)
-    ].filter(Boolean).join("\n\n");
     const settings = activeSettings(snapshot);
 
     try {
@@ -249,7 +251,7 @@ export function ConversationScreen() {
       >
         <ConversationList />
       </div>
-      {historyOpen && (
+      {compactHistory && historyOpen && (
         <button
           className="history-scrim"
           type="button"
