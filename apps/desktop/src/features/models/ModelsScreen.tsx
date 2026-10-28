@@ -15,6 +15,7 @@ export function ModelsScreen() {
   const [runtimeAction, setRuntimeAction] = useState<ActionState>("idle");
   const [runtimeMessage, setRuntimeMessage] = useState("");
   const selectedModel = state.models.find((model) => model.id === state.selectedModelId);
+  const visibleModels = state.models.filter((model) => model.providerId !== "openai-codex" || state.defaultPreference.providerId === "openai-codex");
 
   const checkRuntime = async () => {
     setRuntimeAction("working");
@@ -222,9 +223,9 @@ export function ModelsScreen() {
             <h2>Available models</h2>
             <p>Models are discovered from your connections. API catalogs can include models that do not support text conversations.</p>
           </div>
-          {state.models.length ? (
+          {visibleModels.length ? (
             <div className="model-list">
-              {state.models.map((model) => (
+              {visibleModels.map((model) => (
                 <Button
                   type="button"
                   key={model.id}

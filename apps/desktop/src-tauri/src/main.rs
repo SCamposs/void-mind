@@ -27,6 +27,7 @@ fn main() {
             connections::connection_welcome_seen,
             connections::connection_select,
             connections::connection_login,
+            connections::connection_login_progress,
             connections::connection_login_cancel,
             connections::connection_api_save,
             connections::connection_disconnect,

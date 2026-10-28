@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createConversation } from "@void-mind/mind-core";
+import { createConversation, appendMessage } from "@void-mind/mind-core";
 import {
   DEFAULT_MIND_STATE,
   MIND_STORAGE_KEY,
@@ -82,7 +82,7 @@ describe("versioned persistence", () => {
         title: "Local AI",
         createdAt: "2026-01-01T00:00:00Z",
         updatedAt: "2026-01-01T00:00:00Z",
-        messages: []
+        messages: [{ id: "u1", role: "user", content: "Hello", createdAt: "2026-01-01T00:00:00Z" }]
       }],
       runtime: { endpoint: "http://localhost:9090" }
     });
@@ -138,11 +138,11 @@ describe("versioned persistence", () => {
   });
 
   it("repairs orphaned workspace and knowledge references in conversations", () => {
-    const conversation = createConversation("Context");
+    const conversation = appendMessage(createConversation("Context"), "user", "Context");
     const state = migrateMindState({
       conversations: [
         { ...conversation, workspaceId: "missing", contextKnowledgeIds: ["knowledge-1"] },
-        { ...createConversation("Valid"), id: "conversation-2", workspaceId: "workspace-1", contextKnowledgeIds: ["knowledge-1", "knowledge-2"] }
+        { ...appendMessage(createConversation("Valid"), "user", "Valid"), id: "conversation-2", workspaceId: "workspace-1", contextKnowledgeIds: ["knowledge-1", "knowledge-2"] }
       ],
       workspaces: [{ id: "workspace-1", name: "Study" }],
       knowledge: [
@@ -158,9 +158,21 @@ describe("versioned persistence", () => {
     });
   });
 
+  it("drops historical empty placeholders without dropping archived content", () => {
+    const empty = createConversation();
+    const archived = { ...createConversation(), archivedBranches: [{ id: "branch", reason: "edit" as const, forkedFromMessageId: "u", createdAt: "now", messages: [{ id: "u", role: "user" as const, content: "Preserved", createdAt: "now" }] }] };
+    const storage = new MemoryStorage();
+    saveMindState(storage, { ...structuredClone(DEFAULT_MIND_STATE), conversations: [empty, archived], selectedConversationId: empty.id });
+    const raw = JSON.parse(storage.value ?? "{}");
+    expect(raw.state.conversations.map((c: { id: string }) => c.id)).toEqual([archived.id]);
+    expect(raw.state.selectedConversationId).toBeNull();
+    expect(migrateMindState({ conversations: [empty] }).conversations).toEqual([]);
+    expect(loadMindState(storage).conversations[0].archivedBranches[0].messages[0].content).toBe("Preserved");
+  });
+
   it("persists conversations and omits them when retention is disabled", () => {
     const storage = new MemoryStorage();
-    const conversation = createConversation();
+    const conversation = appendMessage(createConversation(), "user", "Started conversation");
     const state = {
       ...structuredClone(DEFAULT_MIND_STATE),
       conversations: [conversation],

@@ -56,3 +56,17 @@ Native visual evidence: Home and the existing conversation render with the new s
 The Windows NSIS bundle built successfully with native credentials and direct-connection code. An earlier build failed because the old preview still held the executable; only that exact preview process was closed, then packaging succeeded. Linux packaging remains unexecuted locally; its CI build now installs the Secret Service DBus development dependency and runs native tests. The installer artwork/icons remain unchanged. No release/tag was published by this checkpoint.
 
 Legacy Stop receipt from the earlier live session: a long astronomy response was visibly streaming, Stop returned the composer to idle, preserved a partial sentence with `Generation stopped`, and later snapshots plus this app restart showed the same stopped content. This is native evidence for the legacy path; direct HTTP cancellation still requires a real authorized request.
+
+## Direct account authorization and conversation follow-ups
+
+The user completed the official dynamic registration and consent screens and supplied screenshots. The local callback returned successfully; later native inspection confirmed the independently registered account, connected-plan scope and live `ChatGPT plan` model catalog. This is a real direct authorization receipt. No credentials were copied from Codex. The UI was observed in a pending state before the connected state appeared; the root cause of that observation was not established. Native progress metadata and frontend polling now provide callback/identity/storage phases and recover a terminal event missed by the frontend. Auth HTTP operations have a finite total deadline. The callback is now a static VOID-branded page with no request parameters, external resources or scripts in its body.
+
+The user's reported successful chat was inspected without copying its content. That selected conversation retained its legacy Codex override, so it proves the retained conversation path, not direct Responses inference. Direct inference and restart recovery still require separate receipts.
+
+Additional functional fixes: Codex starts only when existing preferences/bindings require compatibility and cannot overwrite a direct-provider default. Existing unavailable workspace-model preferences survive unrelated edits. The header reflects the selected conversation's provider. Legacy models are hidden from the primary Intelligence catalog when a direct provider is selected. The account selector and action row now have explicit spacing.
+
+New conversations are now transient drafts outside the persisted conversation array. Repeated creation reuses the draft; first send promotes it exactly once, preserving selected workspace/context/model. Persistence version 7 removes empty placeholders while preserving archived message content. Source tests cover draft promotion, reuse after navigation, workspace context, absence from persisted storage and empty-record migration.
+
+The horizontal sidebar overflow came from Scroll Area Content's default fit-content minimum width. Shared vertical ScrollSurface now bounds content width and omits the horizontal scrollbar, with horizontal scrolling an explicit opt-in. Conversation preview text normalizes Markdown and whitespace; actual message contents are unchanged. Final native verification follows the rebuild.
+
+Latest checks: 59 JavaScript tests, 23 Rust tests, TypeScript, ESLint, six existing Python tests and Ruff pass. Installer publication remains gated; the local bundle is not a release.

@@ -26,6 +26,7 @@ export async function refreshConnections(): Promise<ConnectionStatus> {
   return status;
 }
 export const beginChatGPTLogin = (accountId?: string) => invoke<string>("connection_login", { accountId: accountId ?? null });
+export const chatGPTLoginProgress = () => invoke<{ loginId: string; state: "pending" | "success" | "error"; message: string } | null>("connection_login_progress");
 export const cancelChatGPTLogin = (loginId: string) => invoke<void>("connection_login_cancel", { loginId });
 export const saveAPIKey = (key: string) => invoke<void>("connection_api_save", { key });
 export const disconnectConnection = (provider: OpenAIProviderId) => invoke<string | null>("connection_disconnect", { provider });

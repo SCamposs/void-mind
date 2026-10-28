@@ -13,6 +13,7 @@ describe("mind store streaming updates", () => {
   beforeEach(() => {
     useMindStore.setState({
       ...structuredClone(DEFAULT_MIND_STATE),
+      draftConversation: null,
       section: "home",
       navigationOpen: false,
       generationState: "idle",
@@ -60,7 +61,8 @@ describe("mind store streaming updates", () => {
 
     const state = useMindStore.getState();
     expect(conversationId).toBe(empty.id);
-    expect(state.conversations).toEqual([empty]);
+    expect(state.conversations).toEqual([]);
+    expect(state.draftConversation?.id).toBe(empty.id);
     expect(state.selectedConversationId).toBe(empty.id);
     expect(state.section).toBe("conversations");
     expect(state.navigationOpen).toBe(false);
@@ -77,7 +79,8 @@ describe("mind store streaming updates", () => {
 
     const state = useMindStore.getState();
     expect(conversationId).not.toBe(existing.id);
-    expect(state.conversations).toHaveLength(2);
+    expect(state.conversations).toHaveLength(1);
+    expect(state.draftConversation?.id).toBe(conversationId);
     expect(state.selectedConversationId).toBe(conversationId);
   });
 
@@ -92,9 +95,32 @@ describe("mind store streaming updates", () => {
     const id = useMindStore.getState().createConversation("new-workspace");
     const state = useMindStore.getState();
     expect(id).toBe(empty.id);
-    expect(state.conversations).toHaveLength(1);
-    expect(state.conversations[0]).toMatchObject({ workspaceId: "new-workspace", contextKnowledgeIds: [] });
-    expect(state.conversations[0].providerOverride).toBeUndefined();
+    expect(state.conversations).toHaveLength(0);
+    expect(state.draftConversation).toMatchObject({ workspaceId: "new-workspace", contextKnowledgeIds: [] });
+    expect(state.draftConversation?.providerOverride).toBeUndefined();
+  });
+
+  it("saves one conversation only on the first message and carries draft context", () => {
+    const first = useMindStore.getState().createConversation("workspace-1");
+    expect(useMindStore.getState().createConversation("workspace-1")).toBe(first);
+    expect(useMindStore.getState().conversations).toEqual([]);
+    expect(JSON.parse(localStorage.getItem("void-mind:state") ?? "{}").state.conversations).toEqual([]);
+    useMindStore.getState().setConversationOverride(first, { providerId: "openai-chatgpt", modelId: "actual-model" });
+    useMindStore.getState().toggleConversationKnowledge(first, "selected-source");
+    useMindStore.getState().appendMessage("user", "My first question");
+    const current = useMindStore.getState();
+    expect(current.draftConversation).toBeNull();
+    expect(current.conversations).toHaveLength(1);
+    expect(current.conversations[0]).toMatchObject({ id: first, title: "My first question", workspaceId: "workspace-1", contextKnowledgeIds: ["selected-source"], providerOverride: { providerId: "openai-chatgpt" } });
+  });
+
+  it("reuses the unsent draft after visiting another conversation", () => {
+    const existing = appendMessage(createConversation(), "user", "Existing chat");
+    useMindStore.setState({ conversations: [existing], selectedConversationId: existing.id });
+    const draft = useMindStore.getState().createConversation();
+    useMindStore.getState().selectConversation(existing.id);
+    expect(useMindStore.getState().createConversation()).toBe(draft);
+    expect(useMindStore.getState().conversations).toEqual([existing]);
   });
 
   it("does not silently select a model from another provider when a catalog disappears", () => {

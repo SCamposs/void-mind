@@ -33,7 +33,12 @@ fn now() -> u64 {
         .as_secs()
 }
 fn random() -> String {
-    format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple())
+    format!(
+        "{}{}{}",
+        Uuid::new_v4().simple(),
+        Uuid::new_v4().simple(),
+        Uuid::new_v4().simple()
+    )
 }
 fn network_error(_: reqwest::Error) -> String {
     "Could not reach OpenAI. Check your connection and try again.".into()
@@ -148,6 +153,8 @@ pub struct Connections {
     login: Mutex<Option<(String, CancellationToken)>>,
     requests: Mutex<HashMap<String, CancellationToken>>,
     client: Client,
+    auth_client: Client,
+    login_progress: Mutex<Option<LoginProgress>>,
 }
 impl Default for Connections {
     fn default() -> Self {
@@ -162,6 +169,14 @@ impl Default for Connections {
                 .user_agent("VOID-Mind/0.2.0")
                 .build()
                 .expect("HTTP client initialization"),
+            auth_client: Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .connect_timeout(Duration::from_secs(15))
+                .timeout(Duration::from_secs(30))
+                .user_agent("VOID-Mind/0.2.0")
+                .build()
+                .expect("Auth HTTP client initialization"),
+            login_progress: Mutex::new(None),
         }
     }
 }
@@ -213,7 +228,7 @@ impl Connections {
                 .clone()
                 .ok_or("Sign in to ChatGPT again.")?;
             let response = self
-                .client
+                .auth_client
                 .post(format!("{AUTH}/api/accounts/oauth/token"))
                 .form(&[
                     ("grant_type", "refresh_token"),
@@ -440,6 +455,44 @@ struct LoginAttempt {
     redirect: String,
     previous: Option<Account>,
 }
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LoginProgress {
+    login_id: String,
+    state: &'static str,
+    message: String,
+}
+async fn login_progress(manager: &Connections, id: &str, state: &'static str, message: &str) {
+    *manager.login_progress.lock().await = Some(LoginProgress {
+        login_id: id.into(),
+        state,
+        message: message.into(),
+    });
+}
+#[tauri::command]
+pub async fn connection_login_progress(
+    manager: State<'_, Arc<Connections>>,
+) -> Result<Option<LoginProgress>, String> {
+    Ok(manager.login_progress.lock().await.clone())
+}
+
+fn callback_response(valid: bool) -> String {
+    let title = if valid {
+        "Authorization received"
+    } else {
+        "Authorization not accepted"
+    };
+    let detail = if valid {
+        "Return to VOID Mind to finish connecting your account. You can close this tab."
+    } else {
+        "Return to VOID Mind and start sign-in again. You can close this tab."
+    };
+    let body = format!(
+        r#"<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VOID Mind</title><style>html{{color-scheme:dark;background:#000;color:#edf0f5;font-family:system-ui,sans-serif}}body{{min-height:100vh;margin:0;display:grid;place-items:center}}main{{max-width:480px;padding:40px;text-align:center}}svg{{width:54px;height:54px;fill:#f5f8fc}}h1{{font-size:28px;font-weight:500;letter-spacing:-.03em;margin:28px 0 14px}}p{{color:#a7adb6;line-height:1.65}}.brand{{font-size:11px;letter-spacing:.24em;margin-top:18px}}</style><main><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M 10 5 L 50 95 L 90 5 L 42 45 L 70 25 L 50 70 L 21.1 5 Z"/></svg><div class="brand">VOID MIND</div><h1>{title}</h1><p>{detail}</p></main></html>"#
+    );
+    format!("HTTP/1.1 {}\r\nContent-Type: text/html; charset=utf-8\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}", if valid { "200 OK" } else { "400 Bad Request" }, body.len())
+}
 fn authorize_url(attempt: &LoginAttempt, host: &str) -> Result<String, String> {
     let mut url = reqwest::Url::parse(&format!("{AUTH}/api/accounts/authorize"))
         .map_err(|_| "Invalid authorization configuration.")?;
@@ -580,13 +633,31 @@ pub async fn connection_login(
         .open_url(url, None::<&str>)
         .map_err(|_| "Could not open your browser. Check the default browser and try again.")?;
     *pending = Some((login_id.clone(), cancel.clone()));
+    login_progress(
+        &manager,
+        &login_id,
+        "pending",
+        "Complete sign-in and authorization in your browser.",
+    )
+    .await;
     let owned = manager.inner().clone();
     let id = login_id.clone();
     tauri::async_runtime::spawn(async move {
         let result = tokio::select! {
             _ = cancel.cancelled() => Err("Sign-in cancelled.".to_string()),
-            result = tokio::time::timeout(Duration::from_secs(600), finish_login(&owned, &listener, &attempt)) => result.unwrap_or_else(|_| Err("Sign-in timed out. Try again.".into())),
+            result = tokio::time::timeout(Duration::from_secs(600), finish_login(&owned, &listener, &attempt, &id)) => result.unwrap_or_else(|_| Err("Sign-in timed out. Try again.".into())),
         };
+        login_progress(
+            &owned,
+            &id,
+            if result.is_ok() { "success" } else { "error" },
+            result
+                .as_ref()
+                .err()
+                .map(String::as_str)
+                .unwrap_or("ChatGPT account connected."),
+        )
+        .await;
         let mut pending = owned.login.lock().await;
         if pending.as_ref().is_some_and(|(current, _)| current == &id) {
             *pending = None;
@@ -602,6 +673,7 @@ async fn finish_login(
     manager: &Connections,
     listener: &TcpListener,
     attempt: &LoginAttempt,
+    login_id: &str,
 ) -> Result<(), String> {
     let (code, client_id) = loop {
         let (mut socket, _) = listener
@@ -632,12 +704,7 @@ async fn finish_login(
             Err("Invalid sign-in callback.".into())
         };
         let valid = parsed.is_ok();
-        let body = if valid {
-            "Authorization received. You can return to VOID Mind."
-        } else {
-            "Authorization was not accepted. Return to VOID Mind and try again."
-        };
-        let reply = format!("HTTP/1.1 {}\r\nContent-Type: text/plain; charset=utf-8\r\nCache-Control: no-store\r\nContent-Security-Policy: default-src 'none'\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}", if valid { "200 OK" } else { "400 Bad Request" }, body.len());
+        let reply = callback_response(valid);
         let _ =
             tokio::time::timeout(Duration::from_secs(2), socket.write_all(reply.as_bytes())).await;
         match parsed {
@@ -646,8 +713,15 @@ async fn finish_login(
             Err(_) => continue,
         }
     };
+    login_progress(
+        manager,
+        login_id,
+        "pending",
+        "Authorization received. Connecting your ChatGPT account…",
+    )
+    .await;
     let response = manager
-        .client
+        .auth_client
         .post(format!("{AUTH}/api/accounts/oauth/token"))
         .form(&[
             ("grant_type", "authorization_code"),
@@ -661,8 +735,15 @@ async fn finish_login(
         .await
         .map_err(network_error)?;
     let tokens: TokenResponse = read_json(response).await?;
+    login_progress(
+        manager,
+        login_id,
+        "pending",
+        "Verifying your ChatGPT account…",
+    )
+    .await;
     let claims = validate_identity(
-        &manager.client,
+        &manager.auth_client,
         tokens
             .id_token
             .as_deref()
@@ -691,6 +772,13 @@ async fn finish_login(
         welcomed: attempt.previous.as_ref().is_some_and(|a| a.welcomed),
     };
     apply_tokens(&mut account, tokens, true)?;
+    login_progress(
+        manager,
+        login_id,
+        "pending",
+        "Saving the connection securely on this device…",
+    )
+    .await;
     manager.cancel_requests().await;
     let mut guard = manager.vault().await?;
     let mut next = guard.as_ref().unwrap().clone();
@@ -1077,6 +1165,17 @@ pub async fn connection_cancel(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn callback_page_is_branded_and_does_not_claim_completed_connection() {
+        let accepted = callback_response(true);
+        assert!(accepted.starts_with("HTTP/1.1 200 OK"));
+        assert!(accepted.contains("Content-Type: text/html"));
+        assert!(accepted.contains("VOID MIND"));
+        assert!(accepted.contains("finish connecting your account"));
+        assert!(!accepted.contains("account connected"));
+        assert!(accepted.contains("Referrer-Policy: no-referrer"));
+        assert!(callback_response(false).starts_with("HTTP/1.1 400 Bad Request"));
+    }
     fn account() -> Account {
         Account {
             client_id: "issued-client".into(),

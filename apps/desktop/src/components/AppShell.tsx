@@ -13,7 +13,7 @@ import {
 import type { PropsWithChildren } from "react";
 import { useRef } from "react";
 import { useMediaQuery } from "../lib/use-media-query";
-import { useMindStore, type AppSection } from "../stores/mind-store";
+import { useMindStore, selectedConversation, type AppSection } from "../stores/mind-store";
 import { VoidMark } from "./VoidMark";
 import { QuickSwitcher } from "./QuickSwitcher";
 import { WindowControls } from "./WindowControls";
@@ -38,7 +38,12 @@ export function AppShell({ children }: PropsWithChildren) {
   const setOpen = useMindStore((state) => state.setNavigationOpen);
   const account = useMindStore((state) => state.codexAccount);
   const connections = useMindStore((state) => state.connections);
-  const selectedProviderId = useMindStore((state) => state.selectedProviderId);
+  const selectedProviderId = useMindStore((state) => {
+    const conversation = state.section === "conversations"
+      ? selectedConversation(state) : undefined;
+    const workspace = state.workspaces.find((item) => item.id === conversation?.workspaceId);
+    return conversation?.providerOverride?.providerId ?? workspace?.preference?.providerId ?? state.defaultPreference.providerId;
+  });
   const compact = useMediaQuery("(max-width: 780px)");
   const menuButton = useRef<HTMLButtonElement>(null);
   const navigation = useRef<HTMLElement>(null);

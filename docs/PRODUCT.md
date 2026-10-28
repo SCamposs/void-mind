@@ -71,3 +71,7 @@ Orbit remains part of the broader VOID ecosystem and may become the presence of 
 ## Shared controls
 
 All app-authored buttons, text fields, multiline fields, numbers, checkboxes, switches, selectors, segmented choices and disclosures are composed from source-owned wrappers around Base UI. Scroll Area owns primary page/conversation scrolling; text editors, code blocks and popup lists use the same restrained native scrollbar fallback. Quick switcher and the first ChatGPT-plan confirmation use Base UI Dialog for focus containment and dismissal. Typography and colors remain the VOID tokens. Native Tauri file dialogs and installer controls remain platform-owned, as previously approved.
+
+## Conversation creation and titles
+
+New conversation opens a transient draft. It enters history, recents, workspace counts and persistence only when the first message is sent. There is at most one unsent draft, and historical empty placeholders are removed during migration without discarding archived content. Titles currently derive locally from the first user message; no separate model request is made for naming. The user can rename a saved conversation. Automatic model-generated naming is not implemented.

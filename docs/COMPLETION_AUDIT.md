@@ -44,12 +44,12 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 38 | Partial | Shortcuts/drawers/focus implemented; full keyboard walkthrough pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Verified checks | 51 JS tests, 22 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
+| 41 | Verified checks | 59 JS tests, 23 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
 | 42 | Windows build passed | Production and NSIS rebuild with MXC passed; Linux release unverified. |
 | 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
-| 46 | Partial native QA | Existing account/catalog recovered after restart; real inference and continuation passed with MXC. Fresh direct login, direct inference, refresh and logout remain pending; legacy Stop was observed. |
+| 46 | Partial native QA | Existing account/catalog recovered after restart; real inference and continuation passed with MXC. Fresh direct login and its account-specific catalog were observed; direct inference, refresh and logout remain pending; legacy Stop was observed. |
 | 47 | Documented | CODEX_PROVIDER.md and VALIDATION.md record runtime/sandbox and visual automation limits. |
 
 ## Additional user-requested gates
@@ -61,6 +61,6 @@ This is an open audit, not a completion declaration. The user subsequently appro
 
 ## Connection/control amendment validation
 
-Direct `openai-chatgpt` and `openai-api` providers are implemented separately from the legacy Codex provider. Primary login no longer requires Codex installation. The older Codex runtime is retained for existing bindings; it is not a prerequisite for direct login. Fresh browser consent and real direct inference remain required before declaring this connection work validated.
+Direct `openai-chatgpt` and `openai-api` providers are implemented separately from the legacy Codex provider. Primary login no longer requires Codex installation. The older Codex runtime is retained for existing bindings; it is not a prerequisite for direct login. Fresh browser consent and the direct catalog were observed; real direct inference remains required before declaring this connection work validated.
 
 All app-authored buttons/fields/selectors/checks/switches/numbers/segments/disclosures now use shared Base UI primitives. Primary scroll areas use Base UI with matching native fallback styling for text/code/list overflow. Native snapshots confirm the primary controls; final compact-drawer and postinspection corrections still require reinspection.

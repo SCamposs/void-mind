@@ -1,14 +1,14 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Button, CheckControl, ScrollSurface } from "../../components/Controls";
 import { BookOpen, Brain, MessageSquarePlus, PanelLeft, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveProviderPreference } from "@void-mind/mind-core";
 import { CodexProvider, LlamaServerProvider, OpenAIProvider, type MindProvider } from "@void-mind/providers";
 import { connectionsBridge } from "../../lib/connections-bridge";
 import { codexBridge } from "../../lib/codex-bridge";
 import { conversationContext } from "../../lib/conversation-context";
 import { availableProviderIds } from "../../lib/provider-availability";
-import { useMindStore, activeSettings } from "../../stores/mind-store";
+import { useMindStore, activeSettings, selectedConversation } from "../../stores/mind-store";
 import { useMediaQuery } from "../../lib/use-media-query";
 import { Composer } from "./Composer";
 import { ConversationList } from "./ConversationList";
@@ -30,10 +30,7 @@ export function ConversationScreen() {
   const controller = useRef<AbortController | null>(null);
   const provider = useRef<MindProvider | null>(null);
   const activeAssistantId = useRef<string | null>(null);
-  const conversation = useMemo(
-    () => state.conversations.find((item) => item.id === state.selectedConversationId),
-    [state.conversations, state.selectedConversationId]
-  );
+  const conversation = selectedConversation(state);
   const workspace = state.workspaces.find((item) => item.id === conversation?.workspaceId);
   const resolution = resolveProviderPreference({
     conversation,

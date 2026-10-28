@@ -15,7 +15,7 @@ import {
 } from "@void-mind/mind-core";
 
 export const MIND_STORAGE_KEY = "void-mind:state";
-export const MIND_STORAGE_VERSION = 6;
+export const MIND_STORAGE_VERSION = 7;
 
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTIONS = [
   "You are VOID Mind, a general-purpose local conversational AI.",
@@ -25,6 +25,9 @@ const LEGACY_DEFAULT_SYSTEM_INSTRUCTIONS = [
 ].join(" ");
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+function hasHistory(item: Conversation): boolean {
+  return item.messages.length > 0 || item.archivedBranches.some((branch) => Array.isArray(branch?.messages) && branch.messages.length > 0);
+}
 
 export const DEFAULT_MIND_STATE: MindState = {
   conversations: [],
@@ -264,7 +267,8 @@ export function migrateMindState(value: unknown): MindState {
   const source = isRecord(value) && isRecord(value.state) ? value.state : value;
   if (!isRecord(source)) return structuredClone(DEFAULT_MIND_STATE);
 
-  const foundConversations = conversations(source.conversations ?? source.chats);
+  const foundConversations = conversations(source.conversations ?? source.chats)
+    .filter(hasHistory);
   const settings = isRecord(source.settings) ? source.settings : {};
   const runtime = isRecord(source.runtime) ? source.runtime : {};
   const preferences = isRecord(source.preferences) ? source.preferences : {};
@@ -351,13 +355,12 @@ export function loadMindState(storage: StorageLike): MindState {
 
 export function saveMindState(storage: StorageLike, state: MindState): boolean {
   try {
+    const conversations = state.preferences.retainConversations ? state.conversations.filter(hasHistory) : [];
     storage.setItem(
       MIND_STORAGE_KEY,
       JSON.stringify({
         version: MIND_STORAGE_VERSION,
-        state: state.preferences.retainConversations
-          ? state
-          : { ...state, conversations: [], selectedConversationId: null }
+        state: { ...state, conversations, selectedConversationId: conversations.some((item) => item.id === state.selectedConversationId) ? state.selectedConversationId : null }
       })
     );
     return true;

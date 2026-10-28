@@ -15,6 +15,7 @@ import { useMindStore } from "../stores/mind-store";
 import { listen } from "@tauri-apps/api/event";
 import { refreshConnections } from "../lib/connections-bridge";
 import { connectionError } from "../lib/use-chatgpt-login";
+import { needsLegacyCodex } from "../lib/legacy-codex";
 
 export function App() {
   const section = useMindStore((state) => state.section);
@@ -47,6 +48,7 @@ export function App() {
   }, [bootVisible, finishBoot]);
 
   useEffect(() => {
+    if (!needsLegacyCodex(useMindStore.getState())) return;
     let active = true;
     let unsubscribe: (() => void) | undefined;
     const refresh = async () => {
@@ -62,7 +64,7 @@ export function App() {
           if (!active) return;
           useMindStore.getState().setProviderModels("openai-codex", models);
           const current = useMindStore.getState();
-          if (!current.defaultPreference.modelId) {
+          if (current.defaultPreference.providerId === "openai-codex" && !current.defaultPreference.modelId) {
             const preferred = models.find((model) => model.isDefault) ?? models[0];
             if (preferred) current.setDefaultPreference({
               providerId: "openai-codex",

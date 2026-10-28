@@ -40,6 +40,12 @@ export function WorkspacesScreen() {
       return;
     }
     const model = state.models.find((item) => item.id === preferenceModelId);
+    const retainedPreference = preferenceModelId && workspace.preference?.modelId === preferenceModelId
+      ? workspace.preference : undefined;
+    if (preferenceModelId && !model && !retainedPreference) {
+      setError("That model is unavailable. Choose an available model or the global default.");
+      return;
+    }
     try {
       state.updateWorkspace(workspace.id, {
         name,
@@ -50,7 +56,7 @@ export function WorkspacesScreen() {
           modelId: model.id,
           reasoningEffort: model.defaultReasoningEffort,
           serviceTier: model.defaultServiceTier
-        } : undefined
+        } : retainedPreference
       });
       setError("");
     } catch (cause) {
@@ -108,7 +114,9 @@ export function WorkspacesScreen() {
                 value={preferenceModelId}
                 options={[
                   { value: "", label: "Use global default", detail: "Follow the app preference" },
-                  ...state.models.map((model) => ({
+                  ...(workspace.preference?.modelId && !state.models.some((model) => model.id === workspace.preference?.modelId)
+                    ? [{ value: workspace.preference.modelId, label: "Saved model unavailable", detail: "Keep this preference or choose another model" }] : []),
+                  ...state.models.filter((model) => model.providerId !== "openai-codex" || workspace.preference?.providerId === "openai-codex" || state.defaultPreference.providerId === "openai-codex").map((model) => ({
                     value: model.id,
                     label: model.displayName,
                     detail: model.providerId === "openai-chatgpt" ? "ChatGPT plan" : model.providerId === "openai-api" ? "OpenAI API" : model.location === "remote" ? "Codex (legacy)" : "Local runtime"

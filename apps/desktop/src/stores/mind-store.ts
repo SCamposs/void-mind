@@ -45,6 +45,7 @@ export type CodexLoginState = {
 };
 
 type MindActions = {
+  draftConversation: Conversation | null;
   section: AppSection;
   navigationOpen: boolean;
   generationState: GenerationState;
@@ -100,8 +101,15 @@ export type MindStore = MindState & MindActions;
 const storage = typeof window === "undefined" ? null : window.localStorage;
 const initial = storage ? loadMindState(storage) : structuredClone(DEFAULT_MIND_STATE);
 
-function selected(state: MindStore): Conversation | undefined {
-  return state.conversations.find((conversation) => conversation.id === state.selectedConversationId);
+export function selectedConversation(state: MindStore): Conversation | undefined {
+  return state.draftConversation?.id === state.selectedConversationId ? state.draftConversation
+    : state.conversations.find((conversation) => conversation.id === state.selectedConversationId);
+}
+
+function changeConversation(state: MindStore, id: string, change: (conversation: Conversation) => Conversation): Partial<MindStore> {
+  return state.draftConversation?.id === id
+    ? { draftConversation: change(state.draftConversation) }
+    : { conversations: state.conversations.map((item) => item.id === id ? change(item) : item) };
 }
 
 function replaceSelected(state: MindStore, conversation: Conversation): Partial<MindStore> {
@@ -114,6 +122,7 @@ function replaceSelected(state: MindStore, conversation: Conversation): Partial<
 
 export const useMindStore = create<MindStore>()((set) => ({
   ...initial,
+  draftConversation: null,
   section: "home",
   navigationOpen: false,
   generationState: "idle",
@@ -133,25 +142,16 @@ export const useMindStore = create<MindStore>()((set) => ({
   createConversation: (workspaceId) => {
     let conversationId = "";
     set((state) => {
-      const current = selected(state);
-      if (current?.messages.length === 0) {
-        conversationId = current.id;
-        return {
-          conversations: state.conversations.map((conversation) =>
-            conversation.id === current.id && conversation.workspaceId !== workspaceId
-              ? { ...conversation, workspaceId, providerOverride: undefined, providerBinding: undefined, contextKnowledgeIds: [] }
-              : conversation
-          ),
-          selectedConversationId: current.id,
-          section: "conversations",
-          navigationOpen: false
-        };
-      }
-
-      const conversation = { ...createConversation(), workspaceId };
+      const current = selectedConversation(state);
+      const previous = state.draftConversation ?? (current?.messages.length === 0 && current.archivedBranches.length === 0 ? current : undefined);
+      const conversation = previous
+        ? previous.workspaceId === workspaceId ? previous
+          : { ...previous, workspaceId, providerOverride: undefined, providerBinding: undefined, contextKnowledgeIds: [] }
+        : { ...createConversation(), workspaceId };
       conversationId = conversation.id;
       return {
-        conversations: [conversation, ...state.conversations],
+        conversations: state.conversations.filter((item) => item.id !== conversation.id),
+        draftConversation: conversation,
         selectedConversationId: conversation.id,
         section: "conversations",
         navigationOpen: false
@@ -162,16 +162,13 @@ export const useMindStore = create<MindStore>()((set) => ({
   selectConversation: (selectedConversationId) =>
     set({ selectedConversationId, section: "conversations", navigationOpen: false }),
   renameConversation: (id, title) =>
-    set((state) => ({
-      conversations: state.conversations.map((conversation) =>
-        conversation.id === id ? renameConversation(conversation, title) : conversation
-      )
-    })),
+    set((state) => changeConversation(state, id, (conversation) => renameConversation(conversation, title))),
   deleteConversation: (id) =>
     set((state) => {
       const conversations = deleteConversation(state.conversations, id);
       return {
         conversations,
+        draftConversation: state.draftConversation?.id === id ? null : state.draftConversation,
         selectedConversationId:
           state.selectedConversationId === id
             ? conversations[0]?.id ?? null
@@ -179,27 +176,13 @@ export const useMindStore = create<MindStore>()((set) => ({
       };
     }),
   pinConversation: (id, pinned) =>
-    set((state) => ({
-      conversations: state.conversations.map((conversation) =>
-        conversation.id === id ? { ...conversation, pinned } : conversation
-      )
-    })),
+    set((state) => changeConversation(state, id, (conversation) => ({ ...conversation, pinned }))),
   setConversationBinding: (id, providerBinding) =>
-    set((state) => ({
-      conversations: state.conversations.map((conversation) =>
-        conversation.id === id ? { ...conversation, providerBinding } : conversation
-      )
-    })),
+    set((state) => changeConversation(state, id, (conversation) => ({ ...conversation, providerBinding }))),
   setConversationOverride: (id, providerOverride) =>
-    set((state) => ({
-      conversations: state.conversations.map((conversation) =>
-        conversation.id === id ? { ...conversation, providerOverride } : conversation
-      )
-    })),
+    set((state) => changeConversation(state, id, (conversation) => ({ ...conversation, providerOverride }))),
   toggleConversationKnowledge: (id, knowledgeId) =>
-    set((state) => ({
-      conversations: state.conversations.map((conversation) => {
-        if (conversation.id !== id) return conversation;
+    set((state) => changeConversation(state, id, (conversation) => {
         const current = conversation.contextKnowledgeIds ?? [];
         return {
           ...conversation,
@@ -207,12 +190,11 @@ export const useMindStore = create<MindStore>()((set) => ({
             ? current.filter((item) => item !== knowledgeId)
             : [...current, knowledgeId]
         };
-      })
-    })),
+      })),
   appendMessage: (role, content, status = "complete") => {
     let messageId = "";
     set((state) => {
-      let conversation = selected(state);
+      let conversation = selectedConversation(state);
       if (!conversation) conversation = createConversation();
       const next = appendMessage(conversation, role, content, { status });
       messageId = next.messages.at(-1)?.id ?? "";
@@ -221,7 +203,8 @@ export const useMindStore = create<MindStore>()((set) => ({
         conversations: exists
           ? state.conversations.map((item) => (item.id === next.id ? next : item))
           : [next, ...state.conversations],
-        selectedConversationId: next.id
+        selectedConversationId: next.id,
+        draftConversation: state.draftConversation?.id === next.id ? null : state.draftConversation
       };
     });
     return messageId;
@@ -237,12 +220,12 @@ export const useMindStore = create<MindStore>()((set) => ({
     }),
   editUserMessage: (id, content) =>
     set((state) => {
-      const conversation = selected(state);
+      const conversation = selectedConversation(state);
       return conversation ? replaceSelected(state, editUserMessage(conversation, id, content)) : {};
     }),
   prepareRegeneration: () =>
     set((state) => {
-      const conversation = selected(state);
+      const conversation = selectedConversation(state);
       return conversation ? replaceSelected(state, prepareRegeneration(conversation)) : {};
     }),
   setGeneration: (generationState, generationError = null) =>
@@ -309,6 +292,8 @@ export const useMindStore = create<MindStore>()((set) => ({
           )
         })),
         knowledge: state.knowledge.filter((item) => item.workspaceId !== id),
+        draftConversation: state.draftConversation?.workspaceId === id
+          ? { ...state.draftConversation, workspaceId: undefined, contextKnowledgeIds: [] } : state.draftConversation,
         selectedWorkspaceId:
           state.selectedWorkspaceId === id ? next.workspaces[0]?.id ?? null : state.selectedWorkspaceId
       };
@@ -321,7 +306,9 @@ export const useMindStore = create<MindStore>()((set) => ({
       conversations: state.conversations.map((conversation) => ({
         ...conversation,
         contextKnowledgeIds: conversation.contextKnowledgeIds?.filter((item) => item !== id)
-      }))
+      })),
+      draftConversation: state.draftConversation
+        ? { ...state.draftConversation, contextKnowledgeIds: state.draftConversation.contextKnowledgeIds?.filter((item) => item !== id) } : null
     })),
   updateRuntime: (update) =>
     set((state) => ({ runtime: { ...state.runtime, ...update }, providerHealth: null })),
@@ -342,7 +329,7 @@ useMindStore.subscribe((state) => {
   if (!storage) return;
   const persisted: MindState = {
     conversations: state.conversations,
-    selectedConversationId: state.selectedConversationId,
+    selectedConversationId: state.conversations.some((item) => item.id === state.selectedConversationId) ? state.selectedConversationId : null,
     workspaces: state.workspaces,
     selectedWorkspaceId: state.selectedWorkspaceId,
     knowledge: state.knowledge,

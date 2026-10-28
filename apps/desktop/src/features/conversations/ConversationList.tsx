@@ -12,10 +12,21 @@ function groupLabel(conversation: Conversation, now = new Date()): string {
   return "Older";
 }
 
+function preview(conversation: Conversation): string {
+  const content = [...conversation.messages].reverse().find((message) => message.content.trim())?.content;
+  if (!content) return "Empty conversation";
+  return content.replace(/```[\s\S]*?```/g, "[Code]")
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[*_~`]/g, "")
+    .replace(/\s+/g, " ").trim();
+}
+
 export function ConversationList() {
   const conversations = useMindStore((state) => state.conversations);
   const selectedId = useMindStore((state) => state.selectedConversationId);
   const selectedWorkspaceId = useMindStore((state) => state.selectedWorkspaceId);
+  const draftConversation = useMindStore((state) => state.draftConversation);
   const create = useMindStore((state) => state.createConversation);
   const select = useMindStore((state) => state.selectConversation);
   const rename = useMindStore((state) => state.renameConversation);
@@ -39,7 +50,7 @@ export function ConversationList() {
     }
     return [...result];
   }, [filtered]);
-  const currentWorkspaceId = conversations.find((item) => item.id === selectedId)?.workspaceId;
+  const currentWorkspaceId = (draftConversation?.id === selectedId ? draftConversation : conversations.find((item) => item.id === selectedId))?.workspaceId;
 
   const beginRename = (id: string, title: string) => {
     setEditingId(id);
@@ -112,7 +123,7 @@ export function ConversationList() {
                     onClick={() => select(conversation.id)}
                   >
                     <strong>{conversation.title}</strong>
-                    <span>{conversation.messages.at(-1)?.content || "Empty conversation"}</span>
+                    <span>{preview(conversation)}</span>
                   </Button>
                   <div className="row-actions">
                     <Button
