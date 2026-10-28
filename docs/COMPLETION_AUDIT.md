@@ -18,7 +18,7 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 | 12 | Observed earlier | Native catalog loaded; model normalization covered by fixture tests. |
 | 13 | Source + tests | Catalog comes from runtime; test model names are fixtures. |
 | 14 | Source reviewed | Runtime reasoning metadata drives selectors; interactive switching pending. |
-| 15 | Partial | Bridge stream tests pass; actual remote inference unverified. |
+| 15 | Native inference observed | Actual Portuguese answer and context-dependent follow-up completed after MXC correction. Token cadence still needs direct observation. |
 | 16 | Partial | Interrupt tests cover active and late-start turns; actual cancellation unverified. |
 | 17 | Source + tests | Product conversation ID and remote binding are separate; resume test passes. |
 | 18 | Partial | Neutral cwd and minimal read profile tested structurally; OS sandbox validation pending. |
@@ -44,12 +44,12 @@ This is an open audit, not a completion declaration. Numbering follows section 7
 | 38 | Partial | Shortcuts/drawers/focus implemented; full keyboard walkthrough pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Verified checks | 43 JS tests, 14 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
-| 42 | Partial | Vite build passes; current NSIS rebuild must finish; Linux release unverified. |
+| 41 | Verified checks | 43 JS tests, 15 Rust tests, TypeScript/lint/fmt passed in recent checkpoints. |
+| 42 | Windows build passed | Production and NSIS rebuild with MXC passed; Linux release unverified. |
 | 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
-| 46 | Reported blocked | Real account flow/inference remains unverified; elevated sandbox rejection documented. |
+| 46 | Partial native QA | Existing account/catalog recovered after restart; real inference and continuation passed with MXC. Fresh login/logout and Stop remain pending. |
 | 47 | Documented | CODEX_PROVIDER.md and VALIDATION.md record runtime/sandbox and visual automation limits. |
 
 ## Additional user-requested gates
