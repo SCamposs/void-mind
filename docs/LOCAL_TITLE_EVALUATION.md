@@ -1,14 +1,21 @@
 # Local title generation: feasibility assessment
 
-Status: assessment only. The user requested evidence that an initial local model is worthwhile and asked for an environment that is easy to clean. No model has been selected, downloaded, trained or integrated for this feature. The existing `lab/` remains in standby.
+Status: candidate selected, experiment not executed. On 2026-10-28 the user chose `Qwen/Qwen3-0.6B` as the first candidate, using its pretrained weights without training. No model has been downloaded, benchmarked or integrated for this feature. The main environment goal remains paused and the existing `lab/` remains in standby.
+
+## Final user decision
+
+The scope is one practical product function: generate a short conversation title locally, without using the user's ChatGPT quota. It is not a new AI research program. Evaluate the ready model in an isolated environment; do not automatically integrate it into Mind, introduce a download flow or change the existing title behavior. If pretrained inference is good and fast enough, no fine-tuning is needed. Training is outside this experiment and is not an automatic next step after a failed benchmark.
+
+The product keeps the VOID visual identity. The candidate's Apache-2.0 license requires applicable distribution notices, not a decorative provider credit in the composer or conversation. Preserve its license and any applicable NOTICE material with distributed artifacts/documentation. Do not claim the pretrained weights were created or trained by Mind.
+
+The official model card documents a non-thinking mode. Evaluate title generation with thinking explicitly disabled through the runtime's supported hard switch, a bounded input/output budget and a fixed recorded configuration. Do not rely only on a `/no_think` phrase inside an untrusted user prompt. Pin the exact model revision and record the runtime/format before any download or benchmark; quantization and distribution format are not yet selected.
 
 ## Decision to evaluate
 
-Compare three approaches to the first user message:
+Compare two approaches to the first user message:
 
 1. Existing deterministic title extraction, with no model load.
-2. A small pretrained instruction model, without additional training.
-3. The same base with task-specific fine-tuning, only if measured baseline weaknesses justify the experiment.
+2. The selected pretrained `Qwen/Qwen3-0.6B`, without additional training.
 
 Starting from a pretrained base avoids having to learn general language from scratch. It does not establish title quality, Portuguese support, acceptable resource use or redistribution rights by itself. Fine-tuning does not erase the base model's license obligations. Training from scratch is a separate research question and is not the default implementation plan for this product feature.
 
@@ -29,15 +36,22 @@ Cleanup must stop experiment-owned processes first, verify the resolved root is 
 - A fixed, held-out set of Portuguese and English prompts, including long prompts, code, questions, accents and misleading instructions. Use synthetic or explicitly supplied material, not private chat history gathered automatically.
 - Evaluate short, relevant titles in the user's language, preserving important identifiers without answering the prompt or inventing facts. A 36-character limit is a candidate product target, not a quality score.
 - Measure cold-load time, warm title latency, peak/resident memory, downloaded/installed size and behavior while the main chat is active. Compare against deterministic extraction.
-- If training is justified, measure a short pilot's actual examples/steps per second and memory use before estimating a full run. Report setup time separately from training and inference.
-- Compare the held-out quality before/after adjustment; do not call memorized training examples a successful evaluation. Reject an adjustment that adds cost without a useful quality improvement.
+- Report setup/download/load time separately from inference. There is no training stage in this experiment.
+- Retain all raw titles and per-case timing results, including failures and output-limit violations. Do not infer success from a few favorable examples or silently normalize poor outputs before scoring them.
 - Confirm the exact weights/tokenizer/code licenses and required distribution notices before selecting a base.
 
 Product integration, if later accepted, should generate once in the background after first send, preserve an immediate fallback, avoid blocking the main response and never overwrite a manual rename. An unavailable local model must retain the fallback instead of silently consuming a remote quota.
 
-## Research leads, not selected models
+## Sources and superseded alternatives
 
-Official Hugging Face model cards confirm that small pretrained instruction variants exist at 135M and 360M parameters. The SmolLM2 cards identify English and Apache-2.0; they do not prove Portuguese title quality or local training speed. These are examples to assess, not a benchmark result or a chosen dependency:
+Selected candidate and license:
+
+- https://huggingface.co/Qwen/Qwen3-0.6B
+- https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE
+
+No latency, quality or memory result is established by the model card. Actual measurements remain required before proposing product integration. Acceptance thresholds and packaging remain open decisions.
+
+SmolLM2 variants at 135M and 360M parameters were earlier research examples. They are not candidates for the first experiment after the user's final Qwen selection. Their English/Apache-2.0 cards did not establish Portuguese title quality or local training speed:
 
 - https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct
 - https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct
