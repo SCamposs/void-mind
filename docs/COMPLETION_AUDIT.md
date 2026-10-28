@@ -4,22 +4,22 @@ This is an open audit, not a completion declaration. The user subsequently appro
 
 | Criterion | Evidence level | Current evidence / remaining gate |
 | --- | --- | --- |
-| 1 | Source reviewed | Home/onboarding prioritize Codex; native acceptance pending. |
+| 1 | Native primary connection observed | Home/onboarding prioritize ChatGPT; direct account/catalog/inference observed. First-run acceptance remains pending. |
 | 2 | Source + tests | Rust codex.rs and providers/codex.ts implement official app-server. |
 | 3 | Source reviewed | No browser token/cookie collection in integration. |
 | 4 | Partial | PATH/native npm-shim discovery exists; missing/executable permission/platform failure cases need stronger lifecycle tests. |
 | 5 | Partial | Manager starts/reuses/stops children; crash/shutdown/process-launch integration tests incomplete. |
 | 6 | Source + tests | Central IDs/pending map/reader; direct tests cover out-of-order replies, duplicate/unknown IDs, sanitized errors and failure-drain behavior. |
-| 7 | Observed earlier | Native app showed connected account; full revalidation pending. |
-| 8 | Partial | Official account/login/start implemented; real login flow not exercised. |
-| 9 | Partial | Browser/device-code branches implemented; browser failure/cancel tests pass; actual authentication pending. |
+| 7 | Native observed | Direct connected account and live catalog recovered after preview restart. |
+| 8 | Native direct login observed | User completed official browser consent; direct account and catalog loaded. Legacy login start remains implemented but not freshly exercised. |
+| 9 | Native browser flow observed | Direct browser flow completed with user-controlled authentication. Legacy device-code flow remains unverified live. |
 | 10 | Unverified live | Official account/logout call exists; real logout not exercised. |
 | 11 | Source reviewed | Persistence uses product-state allowlist, excluding transient account/auth state. |
 | 12 | Observed earlier | Native catalog loaded; model normalization covered by fixture tests. |
 | 13 | Source + tests | Catalog comes from runtime; test model names are fixtures. |
 | 14 | Source reviewed | Runtime reasoning metadata drives selectors; interactive switching pending. |
-| 15 | Native inference observed | Actual Portuguese answer and context-dependent follow-up completed after MXC correction. Token cadence still needs direct observation. |
-| 16 | Native legacy Stop observed; direct path partial | Interrupt fixtures pass; native Stop preserved a stable partial answer through restart. Direct HTTP cancellation has orchestration tests but no live credential-backed receipt. |
+| 15 | Native legacy and direct inference observed | Portuguese explanations and contextual follow-ups completed on both paths. Incremental direct text was observed at separate partial stages. |
+| 16 | Native legacy and direct Stop observed | Both partials survived restart. Direct Stop preserved an unfinished item, settled to idle, remained stable and allowed a successful contextual follow-up. |
 | 17 | Source + tests | Product conversation ID and remote binding are separate; resume test passes. |
 | 18 | Partial | Neutral cwd and minimal read profile tested structurally; OS sandbox validation pending. |
 | 19 | Source reviewed | General-purpose product surfaces; Codex in Intelligence/provider details. |
@@ -49,7 +49,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
-| 46 | Partial native QA | Existing account/catalog recovered after restart; real inference and continuation passed with MXC. Fresh direct login and its account-specific catalog were observed; direct inference, refresh and logout remain pending; legacy Stop was observed. |
+| 46 | Partial native QA | Legacy inference/continuation/Stop passed. Direct fresh login, catalog, inference, incremental streaming, Stop, post-Stop contextual continuation and persisted conversation/account after restart observed. Refresh/logout and a new request after restart remain pending. |
 | 47 | Documented | CODEX_PROVIDER.md and VALIDATION.md record runtime/sandbox and visual automation limits. |
 
 ## Additional user-requested gates
@@ -61,6 +61,6 @@ This is an open audit, not a completion declaration. The user subsequently appro
 
 ## Connection/control amendment validation
 
-Direct `openai-chatgpt` and `openai-api` providers are implemented separately from the legacy Codex provider. Primary login no longer requires Codex installation. The older Codex runtime is retained for existing bindings; it is not a prerequisite for direct login. Fresh browser consent and the direct catalog were observed; real direct inference remains required before declaring this connection work validated.
+Direct `openai-chatgpt` and `openai-api` providers are implemented separately from the legacy Codex provider. Primary login no longer requires Codex installation. The older Codex runtime is retained for existing bindings; it is not a prerequisite for direct login. Fresh browser consent, direct catalog, real inference, visible incremental streaming, Stop and contextual continuation passed natively. Post-inference restart recovered the connected account, catalog and full conversation, including stopped content. Real API-key inference, credential refresh/revocation and a new direct request after restart remain unverified.
 
 All app-authored buttons/fields/selectors/checks/switches/numbers/segments/disclosures now use shared Base UI primitives. Primary scroll areas use Base UI with matching native fallback styling for text/code/list overflow. Native snapshots confirm the primary controls; final compact-drawer and postinspection corrections still require reinspection.

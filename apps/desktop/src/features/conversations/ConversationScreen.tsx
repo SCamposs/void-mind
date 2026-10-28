@@ -326,11 +326,13 @@ export function ConversationScreen() {
           privacyMessage={
             !selectedModel
               ? "Choose an intelligence provider to begin."
-              : selectedModel.location === "remote"
-              ? (conversation?.contextKnowledgeIds?.length ?? 0) > 0
-                ? "Sent through Codex with the selected context."
-                : "Sent through the official Codex runtime."
-              : "Local model execution stays on this device."
+              : selectedModel.providerId === "openai-chatgpt"
+                ? "Using ChatGPT plan."
+                : selectedModel.providerId === "openai-api"
+                ? "Using OpenAI API."
+                  : selectedModel.providerId === "openai-codex"
+                ? "ChatGPT through Codex. Selected context is sent to OpenAI."
+                    : "Local model execution stays on this device."
           }
           onModelChange={(id) => {
             const model = state.models.find((item) => item.id === id);

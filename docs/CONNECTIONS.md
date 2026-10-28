@@ -18,6 +18,6 @@ References:
 - https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations
 - https://developers.openai.com/siwc/ui-ux-guidelines
 
-Status: implemented; automated checks and Windows build pass; the user completed real ChatGPT account consent and the native app loaded its direct model catalog. Direct Responses inference and real API-key inference are not yet validated.
+Status: implemented; automated checks and Windows build pass. The user completed real ChatGPT account consent and the native app loaded its direct model catalog. Native direct Responses inference, visible incremental streaming, Stop with preserved partial content, and context-dependent continuation after Stop passed. Real API-key inference, refresh and revocation remain unverified.
 
 The native runtime's default installation is optional compatibility for existing Codex-bound conversations. Direct sign-in starts and finishes inside the Mind-owned connection boundary and never reads the Codex credential files. ChatGPT-plan availability is determined by granted scopes and the authenticated model catalog. The system browser is used for user consent; the app does not automate login or ask for tokens.

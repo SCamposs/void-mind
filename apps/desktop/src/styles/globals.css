@@ -493,19 +493,36 @@ summary {
 }
 
 .row-actions {
+  position: absolute;
+  top: 50%;
+  right: 2px;
   display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--mind-surface);
   padding-right: 8px;
   opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .conversation-row:hover .row-actions,
 .conversation-row:focus-within .row-actions {
   opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .row-actions:has(.is-pinned) {
   opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
+
+.conversation-row:is(:hover, :focus-within):has(.row-actions) .conversation-select,
+.conversation-row:has(.is-pinned) .conversation-select { padding-right: 84px; }
+.conversation-row.is-active .row-actions { background: var(--mind-surface-raised); }
 
 .row-actions button.is-pinned {
   color: var(--mind-ice);
