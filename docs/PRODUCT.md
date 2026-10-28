@@ -62,6 +62,8 @@ The implemented target is WCAG 2.2 AA for text contrast, keyboard access, semant
 
 ## Product Boundaries
 
+Local model-generated titles are under feasibility assessment, not implemented. See [LOCAL_TITLE_EVALUATION.md](LOCAL_TITLE_EVALUATION.md) for the user's requested isolated experiment boundary and evidence required before training. Current titles still use deterministic extraction without an additional inference request.
+
 Knowledge is explicit material supplied by the user. Memory is information deliberately saved or learned from usage. They remain separate domains.
 
 The Codex provider is intentionally conversation-only: read-only sandbox, approvals disabled, neutral workspace, no exposed tool workflow, and no autonomous commands. Knowledge is transmitted only when visibly selected for a conversation using a remote provider.
