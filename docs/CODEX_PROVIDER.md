@@ -15,6 +15,8 @@ Malformed lines, timeouts, exits, and unsupported server requests become bounded
 
 Version probes have a two-second deadline and monitor a 4 KiB output threshold. Output is captured in an OS-cleaned anonymous temporary file, avoiding a blocked output pipe or detached reader thread. Excess output, launch/I/O failure, nonzero exit, invalid UTF-8 and invalid version labels return `Unknown`; deadline/output failures terminate and reap the owned probe child. Windows MXC candidate selection shares a two-second probe budget and deduplicates canonical executable paths. These bounds apply to version probing, not all possible OS filesystem/process-creation delays or arbitrary descendant processes. Permission profiles are unchanged.
 
+Windows discovery skips candidates whose bounded version probe fails, instead of presenting the first existing file as ready after a failed probe. It prefers a runnable MXC-capable version; if none is found within the shared budget, only an older successfully probed candidate may be used. With no successful probe it reports unavailable. This verifies launchability for discovery, not publisher identity or the trustworthiness of software on the user's PATH.
+
 ## Account
 
 `account/read`, browser login, device-code login, login cancellation, and logout are forwarded to app-server. The runtime owns credentials. VOID Mind holds only transient account presentation state and never persists a token.

@@ -809,17 +809,40 @@ fn locate_codex() -> Option<PathBuf> {
         .collect();
     #[cfg(windows)]
     {
-        let deadline = Instant::now() + VERSION_PROBE_TIMEOUT;
-        for path in &candidates {
-            let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
-                break;
-            };
-            if supports_mxc_version(&codex_version_with_timeout(path, remaining)) {
-                return Some(path.clone());
-            }
+        select_windows_candidate(&candidates, VERSION_PROBE_TIMEOUT, probe_codex_version)
+    }
+    #[cfg(not(windows))]
+    {
+        candidates.into_iter().next()
+    }
+}
+
+#[cfg(any(windows, test))]
+fn select_windows_candidate(
+    candidates: &[PathBuf],
+    timeout: Duration,
+    mut probe: impl FnMut(&Path, Duration) -> Option<String>,
+) -> Option<PathBuf> {
+    let deadline = Instant::now() + timeout;
+    let mut runnable_fallback = None;
+    for path in candidates {
+        let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+            break;
+        };
+        if remaining.is_zero() {
+            break;
+        }
+        let Some(version) = probe(path, remaining) else {
+            continue;
+        };
+        if supports_mxc_version(&version) {
+            return Some(path.clone());
+        }
+        if runnable_fallback.is_none() {
+            runnable_fallback = Some(path.clone());
         }
     }
-    candidates.into_iter().next()
+    runnable_fallback
 }
 
 #[cfg(any(windows, test))]
@@ -838,12 +861,15 @@ fn codex_version(path: &Path) -> String {
 }
 
 fn codex_version_with_timeout(path: &Path, timeout: Duration) -> String {
+    probe_codex_version(path, timeout).unwrap_or_else(|| "Unknown".into())
+}
+
+fn probe_codex_version(path: &Path, timeout: Duration) -> Option<String> {
     let mut command = Command::new(path);
     command.arg("--version");
     capture_version_output(command, timeout)
         .ok()
         .and_then(parse_codex_version)
-        .unwrap_or_else(|| "Unknown".into())
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -1791,6 +1817,55 @@ mod tests {
         assert!(!super::supports_mxc_version("Unknown"));
         assert!(super::supports_mxc_version("0.162.0"));
         assert!(super::supports_mxc_version("0.165.0-alpha.1.2"));
+    }
+
+    #[test]
+    fn windows_selection_skips_failed_probes_and_prefers_mxc() {
+        use std::time::Duration;
+        let candidates: Vec<PathBuf> = ["broken/codex.exe", "older/codex.exe", "mxc/codex.exe"]
+            .into_iter()
+            .map(PathBuf::from)
+            .collect();
+        let select = |mxc_available| {
+            super::select_windows_candidate(&candidates, Duration::from_secs(1), |path, _| {
+                if path == candidates[1] {
+                    Some("0.153.4".into())
+                } else if mxc_available && path == candidates[2] {
+                    Some("0.165.0".into())
+                } else {
+                    None
+                }
+            })
+        };
+        assert_eq!(select(true), Some(candidates[2].clone()));
+        assert_eq!(select(false), Some(candidates[1].clone()));
+        assert_eq!(
+            super::select_windows_candidate(&candidates, Duration::from_secs(1), |_, _| None),
+            None
+        );
+        assert_eq!(
+            super::select_windows_candidate(&candidates, Duration::ZERO, |_, _| {
+                panic!("An expired discovery budget must not start a probe")
+            }),
+            None
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_discovery_rejects_an_actual_nonexecutable_candidate() {
+        let directory = tempfile::tempdir().unwrap();
+        let binary = directory.path().join("codex.exe");
+        std::fs::write(&binary, b"This is not a Windows executable.").unwrap();
+        let candidate = resolve_codex_candidate(&binary).unwrap();
+        assert_eq!(
+            super::select_windows_candidate(
+                &[candidate],
+                std::time::Duration::from_secs(1),
+                super::probe_codex_version
+            ),
+            None
+        );
     }
 
     #[cfg(windows)]
