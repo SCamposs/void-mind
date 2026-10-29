@@ -174,6 +174,12 @@ async function assertCopyRemoved(item) {
   });
   assert.equal(await readFile(source, "utf8"), sourceContent);
 }
+async function receipt(status, error) {
+  await writeFile(join(output, "receipt.json"), JSON.stringify({
+    status, platform: process.platform, applicationKind, reducedMotion,
+    commit: process.env.GITHUB_SHA, checks, ...(error ? { error: error.message } : {})
+  }, null, 2));
+}
 
 try {
   await until("tauri-driver readiness", async () => (await command("GET", "/status"))?.ready !== false);
@@ -240,7 +246,7 @@ try {
   await heading("Knowledge");
   const imported = await importSource();
   await click("View full source");
-  await until("full source preview", () => evaluate("return document.querySelector('.knowledge-preview pre')?.textContent === arguments[0];", [sourceContent]));
+  await until("visible full source preview", () => evaluate("const panel = document.querySelector('.knowledge-preview .void-disclosure-panel'); return document.querySelector('.knowledge-preview pre')?.textContent === arguments[0] && panel?.getBoundingClientRect().height > 30 && getComputedStyle(panel).opacity === '1';", [sourceContent]));
   await screenshot("05-knowledge-imported");
   checks.push("A Markdown source selected through the native file chooser creates a real managed copy, metadata and full preview without changing the original.");
   await closeSession();
@@ -291,9 +297,29 @@ try {
   await assertCopyRemoved(workspaceSource);
   assert.equal(await importedItem(), null);
   checks.push("Deleting the synthetic workspace cleans its managed Knowledge copy and metadata while preserving the selected original Markdown file.");
-  await writeFile(join(output, "receipt.json"), JSON.stringify({ platform: process.platform, applicationKind, reducedMotion, commit: process.env.GITHUB_SHA, checks }, null, 2));
+
+  await command("POST", `/session/${session}/window/rect`, { width: 760, height: 600 });
+  await until("native compact viewport", () => evaluate("return innerWidth >= 720 && innerWidth <= 780 && innerHeight <= 600 && !document.querySelector('#primary-navigation');"));
+  const home = await element("css selector", "button[aria-label='Open Home']");
+  await command("POST", `/session/${session}/element/${home}/click`, {});
+  await heading("Make room for thought.");
+  assert.equal(await evaluate("return document.documentElement.scrollWidth <= innerWidth && document.querySelector('.home-composer').getBoundingClientRect().right <= innerWidth;"), true);
+  await screenshot("06-compact-home");
+  const menu = await element("css selector", "button[aria-label='Open navigation']");
+  await command("POST", `/session/${session}/element/${menu}/click`, {});
+  await until("compact navigation drawer", () => evaluate("return !!document.querySelector('#primary-navigation.is-open');"));
+  await screenshot("07-compact-navigation");
+  for (let tab = 0; tab < 8; tab++) {
+    await keys("\uE004");
+    assert.equal(await evaluate("return !!document.activeElement?.closest('#primary-navigation');"), true);
+  }
+  await keys("\uE00C");
+  await until("compact drawer closes and returns focus", () => evaluate("return !document.querySelector('#primary-navigation') && document.activeElement?.getAttribute('aria-label') === 'Open navigation';"));
+  checks.push("A real compact native window keeps Home within its viewport; the navigation drawer contains keyboard focus and Escape restores focus to its trigger.");
+  await receipt("passed");
   checks.forEach(check => console.log(`PASS: ${check}`));
 } catch (error) {
+  await receipt("failed", error);
   if (session) await screenshot("failure").catch(() => undefined);
   console.error(driverLog);
   throw error;
