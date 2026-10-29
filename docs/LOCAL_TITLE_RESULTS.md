@@ -94,7 +94,7 @@ The actual current Mind extraction function was also exercised directly from Typ
 
 The final run does not meet the recorded reliability gate: at least 90% semantic/topic-language adequacy, at least 90% strict contract compliance, and no obedience to embedded adversarial instructions. The principal rejection is reliability, not a universal memory judgment about the candidate.
 
-Keep deterministic extraction and manual rename. Do not integrate this configuration into Mind or VOID, resume the main goal, train the model, or download another candidate as a consequence of this result. The bounded three-configuration investigation is closed with a negative integration result.
+Keep deterministic extraction and manual rename. Do not integrate this configuration into Mind or VOID, train the model, or download another candidate as a consequence of this result. The bounded three-configuration investigation is closed with a negative integration result. The user subsequently accepted this decision and explicitly authorized resuming the main Mind goal, independently of the experiment outcome.
 
 FP32/Python memory is not a final distribution estimate. A future quantized evaluation, if separately authorized, would need fresh measurements of title quality, adversarial behavior, median/tail latency, resident/peak memory, startup and installed size. Quantization was not evaluated here, and its impact on quality cannot be presumed. No packaging strategy or download flow has been selected.
 
@@ -102,7 +102,7 @@ The model's Apache-2.0 license is saved with the pinned artifacts. Any future di
 
 ## Local evidence and cleanup boundary
 
-Evidence remains below the ignored experiment root:
+Lightweight evidence was archived to the ignored `private/experiments/local-titles-evidence-2026-10-28.zip` (436,778 bytes; 34 verified entries):
 
 - `dependencies.lock.txt`, `model-manifest.json`, `model-metadata.json`, `inventory.json`.
 - `results/` and `results-explicit/`: previous raw outputs/configurations/summaries.
@@ -110,4 +110,4 @@ Evidence remains below the ignored experiment root:
 - `preservation-before-v3.json` and `preservation-after-v3.json`: eleven previous result/configuration/case/harness files checked identical by SHA-256.
 - `cases-v3-development.json`, `cases-v3-final.json`, `zero_shot.py`, `run-v3.ps1`: final experiment inputs and harness.
 
-All generation processes completed. No service or inference server was created. Artifacts remain available for inspection; no cleanup deletion has been performed. Cleanup can target this dedicated root after its resolved path and experiment-owned processes are checked, without removing the existing project Python environment or user data.
+All generation processes completed. No service or inference server was created. The user explicitly authorized deleting the isolated model/environment. Automatic execution policy rejected recursive removal, including the checked literal experiment path. Consequently the weights, environment and caches still remain under `private/experiments/local-titles`; deletion is not claimed. The verified archive preserves results, scripts, inputs, manifests, license and model card, excluding weights/environment/cache/temp. The project Python environment and user data were not targeted.

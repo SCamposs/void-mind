@@ -2,7 +2,7 @@
 
 A standalone intelligence environment for focused conversations and contextual work.
 
-VOID Mind is a standalone desktop product for conversation, reasoning, writing, study, and exploration. Its primary provider is the official Codex app-server using a user's ChatGPT account; a loopback-only llama.cpp provider remains available for local models. This repository also preserves the Python model laboratory used for datasets, evaluation, manifests, and reproducible training preparation.
+VOID Mind is a standalone desktop product for conversation, reasoning, writing, study, and exploration. Its primary connection is official Sign in with ChatGPT, using the user's plan without requiring Codex installation. An optional OpenAI API key, legacy Codex app-server compatibility and a loopback-only llama.cpp provider are also available. This repository preserves the Python model laboratory used for datasets, evaluation, manifests, and reproducible training preparation.
 
 ## Current state
 
@@ -11,7 +11,7 @@ Implemented:
 - standalone Tauri v2, React, and TypeScript desktop application
 - product Home, persisted conversations, search, pin, rename, and delete
 - streamed assistant responses with real interrupt, regenerate, edit, copy, Markdown, and code blocks
-- official ChatGPT browser and device-code authentication through Codex app-server
+- official direct ChatGPT browser authentication, plus legacy Codex browser/device-code authentication
 - live Codex model, reasoning-effort, and service-tier discovery
 - persistent local conversation to Codex thread binding
 - functional Workspaces with instructions and preferred intelligence
@@ -22,7 +22,7 @@ Implemented:
 - General, Creative, Analytical, Concise, and Custom response profiles
 - preserved Python model lab under `lab/`
 
-The primary provider is OpenAI Codex. Authentication and account credentials are owned by the installed Codex runtime; VOID Mind does not extract or persist tokens. Each thread runs in a neutral app-data workspace with `approvalPolicy: never`, a read-only sandbox, and no product tool workflow. VOID Local connects only to a llama.cpp-compatible server on `127.0.0.1`, `localhost`, or `::1`.
+Direct ChatGPT and API-key credentials are held by the native system credential store, outside product JSON persistence and frontend state. The legacy Codex runtime owns its own authentication; its threads use a neutral app-data workspace with `approvalPolicy: never`, a restrictive permission profile and no product tool workflow. Effective legacy filesystem denial still requires validation. VOID Local connects only to a llama.cpp-compatible server on `127.0.0.1`, `localhost`, or `::1`.
 
 ## Repository
 
@@ -110,4 +110,4 @@ VOID Mind is an early standalone foundation, not the completed future platform.
 
 ### Connection update
 
-Continue with ChatGPT now has a direct official Sign in with ChatGPT plan-usage implementation; this path does not require a separate Codex installation. Intelligence also offers an optional OpenAI API key. Both use the native system credential store and separate model catalogs. Fresh consent and real direct inference are still pending manual QA; existing Codex account inference remains a separate, previously exercised path. See [Connections](docs/CONNECTIONS.md).
+Continue with ChatGPT uses direct official Sign in with ChatGPT plan usage; this path does not require a separate Codex installation. Intelligence also offers an optional OpenAI API key. Both use the native system credential store and separate model catalogs. Fresh consent, direct inference, incremental streaming, Stop, contextual continuation and restart recovery were observed natively. Real API-key inference, refresh/revocation and the remaining release gates are open. See [Connections](docs/CONNECTIONS.md) and the [completion audit](docs/COMPLETION_AUDIT.md).

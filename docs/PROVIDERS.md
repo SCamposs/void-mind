@@ -6,7 +6,7 @@
 - VOID Local llama-server provider: **Implemented**
 - External local-server mode: **Implemented**
 - Managed local runtime: **Implemented foundation**
-- ChatGPT plan provider: **Implemented; real direct authentication/inference QA pending**
+- ChatGPT plan provider: **Implemented; native authentication, inference, Stop, continuation and restart recovery observed**
 - OpenAI API-key provider: **Implemented; real key inference QA pending**
 - OpenAI Codex provider: **Implemented, legacy runtime connection**
 - Additional remote providers: **Future**
@@ -31,7 +31,7 @@ Generation emits `binding`, `start`, `token`, `done`, or `error`. Cancellation u
 
 The legacy Codex provider launches the installed `codex app-server --stdio`, performs the required initialize handshake, and centralizes JSONL request correlation and notification normalization in the Tauri layer. It supports runtime-owned ChatGPT login, logout and cancellation; live model discovery; persisted thread IDs; streamed assistant deltas; turn completion; and actual `turn/interrupt`.
 
-Every thread uses a neutral workspace below app data, `approvalPolicy: never`, a named minimal-read permission profile with network disabled, and general-purpose conversation instructions. Server-initiated approval or tool requests are rejected. Credentials are never requested, parsed, logged, or written by VOID Mind. The elevated Windows sandbox rejected this restrictive profile during the protocol probe; normal-session inference and isolation remain unverified. See CODEX_PROVIDER.md and COMPLETION_AUDIT.md.
+Every legacy thread uses a neutral workspace below app data, `approvalPolicy: never`, a named minimal-read permission profile with network disabled, and general-purpose conversation instructions. Server-initiated approval or tool requests are rejected. Legacy runtime credentials are never requested, parsed, logged, or written by VOID Mind. Earlier elevated sandbox probes failed; subsequent MXC-backed native inference, Stop and continuation passed. Effective filesystem-denial validation remains open. See CODEX_PROVIDER.md and COMPLETION_AUDIT.md.
 
 The provider exposes errors as stable user-facing categories such as missing runtime, authentication required, network unavailable, usage limit, unavailable model, protocol mismatch, and generation failure. It does not silently route to llama.cpp.
 

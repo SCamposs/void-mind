@@ -68,9 +68,9 @@ Provider resolution is deterministic: conversation override, then workspace pref
 
 ## Persistence
 
-**Implemented.** A versioned JSON envelope stores conversations, Codex thread identifiers, workspaces, Knowledge metadata/content, profiles, provider preferences, safe settings, and non-secret local-runtime configuration. Missing, malformed, partial, and legacy chat-shaped values fall back or migrate to safe defaults. Runtime account state and credentials are not persisted by the application.
+**Implemented.** A versioned JSON envelope stores conversations, Codex thread identifiers, workspaces, Knowledge metadata/content, profiles, provider preferences, safe settings, and non-secret local-runtime configuration. Missing, malformed, partial, and legacy chat-shaped values fall back or migrate to safe defaults. Transient runtime account state and credentials are excluded from this envelope.
 
-Secrets are not required for the local provider and are not stored. A future remote-provider credential layer must use secure native storage behind a separate contract.
+Secrets are not required for the local provider. Direct ChatGPT and OpenAI API-key connections use the implemented native system credential vault behind the Connections contract below. Legacy Codex credentials remain owned by its runtime.
 
 ## Native local runtime
 

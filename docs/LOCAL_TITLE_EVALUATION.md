@@ -1,6 +1,6 @@
 # Local title generation: feasibility assessment
 
-Status: isolated experiment completed, **not approved for integration**. On 2026-10-28 the user chose `Qwen/Qwen3-0.6B` as the first candidate, using its pretrained weights without training. Three bounded prompt configurations were evaluated offline, including a final zero-shot run with official template/sampling checks and separate development/final sets. Reliability remained insufficient. See [LOCAL_TITLE_RESULTS.md](LOCAL_TITLE_RESULTS.md) for raw examples, latency, memory, preservation checks and limits. There was no training or product integration; the main environment goal remains paused and `lab/` remains in standby.
+Status: isolated experiment completed, **not approved for integration**. On 2026-10-28 the user chose `Qwen/Qwen3-0.6B` as the first candidate, using its pretrained weights without training. Three bounded prompt configurations were evaluated offline, including a final zero-shot run with official template/sampling checks and separate development/final sets. Reliability remained insufficient. See [LOCAL_TITLE_RESULTS.md](LOCAL_TITLE_RESULTS.md) for raw examples, latency, memory, preservation checks and limits. The user accepted retaining deterministic extraction, authorized experiment cleanup and explicitly resumed the main environment work. There was no training or product integration; `lab/` remains in standby. Cleanup is blocked by execution policy; a verified lightweight evidence archive is preserved.
 
 ## Final user decision
 
