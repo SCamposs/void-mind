@@ -226,24 +226,12 @@ impl Connections {
             if now() < account.earliest_refresh_at {
                 return Err("ChatGPT session is not ready to renew. Try again shortly.".into());
             }
-            let refresh = account
-                .refresh_token
-                .clone()
-                .ok_or("Sign in to ChatGPT again.")?;
-            let response = self
-                .auth_client
-                .post(format!("{AUTH}/api/accounts/oauth/token"))
-                .form(&[
-                    ("grant_type", "refresh_token"),
-                    ("client_id", &account.client_id),
-                    ("refresh_token", &refresh),
-                    ("resource", API),
-                ])
-                .send()
-                .await
-                .map_err(network_error)?;
-            let tokens: TokenResponse = read_json(response).await?;
-            apply_tokens(account, tokens, false)?;
+            renew_account(
+                &self.auth_client,
+                account,
+                &format!("{AUTH}/api/accounts/oauth/token"),
+            )
+            .await?;
             vault.dirty = true;
         }
         // Retry a failed vault write before ever using its rotating replacement.
@@ -253,6 +241,29 @@ impl Connections {
         }
         account_token(vault)
     }
+}
+async fn renew_account(
+    client: &Client,
+    account: &mut Account,
+    endpoint: &str,
+) -> Result<(), String> {
+    let refresh = account
+        .refresh_token
+        .as_deref()
+        .ok_or("Sign in to ChatGPT again.")?;
+    let response = client
+        .post(endpoint)
+        .form(&[
+            ("grant_type", "refresh_token"),
+            ("client_id", account.client_id.as_str()),
+            ("refresh_token", refresh),
+            ("resource", API),
+        ])
+        .send()
+        .await
+        .map_err(network_error)?;
+    let tokens: TokenResponse = read_json(response).await?;
+    apply_tokens(account, tokens, false)
 }
 fn account_token(vault: &Vault) -> Result<String, String> {
     vault
@@ -842,6 +853,36 @@ pub async fn connection_api_save(
 struct Discovery {
     revocation_endpoint: String,
 }
+async fn revoke_refresh_token(
+    client: &Client,
+    endpoint: reqwest::Url,
+    client_id: &str,
+    refresh: &str,
+) -> Result<(), String> {
+    for retry in 0..3 {
+        if retry > 0 {
+            tokio::time::sleep(Duration::from_millis(250 * (1 << retry))).await;
+        }
+        if let Ok(response) = client
+            .post(endpoint.clone())
+            .form(&[
+                ("token", refresh),
+                ("token_type_hint", "refresh_token"),
+                ("client_id", client_id),
+            ])
+            .send()
+            .await
+        {
+            if response.status().is_success() {
+                return Ok(());
+            }
+            if !response.status().is_server_error() {
+                break;
+            }
+        }
+    }
+    Err("Revocation was not confirmed.".into())
+}
 #[tauri::command]
 pub async fn connection_disconnect(
     manager: State<'_, Arc<Connections>>,
@@ -875,30 +916,7 @@ pub async fn connection_disconnect(
                 if url.scheme() != "https" || url.host_str() != Some("auth.openai.com") {
                     return Err("Invalid revocation endpoint.".to_string());
                 }
-                for retry in 0..3 {
-                    if retry > 0 {
-                        tokio::time::sleep(Duration::from_millis(250 * (1 << retry))).await;
-                    }
-                    if let Ok(response) = manager
-                        .client
-                        .post(url.clone())
-                        .form(&[
-                            ("token", refresh.as_str()),
-                            ("token_type_hint", "refresh_token"),
-                            ("client_id", &account.client_id),
-                        ])
-                        .send()
-                        .await
-                    {
-                        if response.status().is_success() {
-                            return Ok(());
-                        }
-                        if !response.status().is_server_error() {
-                            break;
-                        }
-                    }
-                }
-                Err("Revocation was not confirmed.".into())
+                revoke_refresh_token(&manager.client, url, &account.client_id, refresh).await
             }
             .await;
             if revoke.is_err() {
@@ -1169,6 +1187,141 @@ pub async fn connection_cancel(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Loopback only: no vault, real credentials, provider request or inference.
+    async fn auth_server(
+        responses: Vec<(u16, String)>,
+    ) -> (String, tokio::task::JoinHandle<Vec<String>>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!("http://{}/token", listener.local_addr().unwrap());
+        let task = tokio::spawn(async move {
+            let mut requests = Vec::new();
+            for (status, body) in responses {
+                let request = tokio::time::timeout(Duration::from_secs(5), async {
+                    let (mut socket, _) = listener.accept().await.unwrap();
+                    let mut bytes = Vec::new();
+                    loop {
+                        let mut chunk = [0u8; 1024];
+                        let count = socket.read(&mut chunk).await.unwrap();
+                        assert!(count > 0, "request ended before its body");
+                        bytes.extend_from_slice(&chunk[..count]);
+                        assert!(bytes.len() <= 8192, "unexpected request size");
+                        if let Some(end) = bytes.windows(4).position(|v| v == b"\r\n\r\n") {
+                            let headers = String::from_utf8_lossy(&bytes[..end]);
+                            let length: usize = headers
+                                .lines()
+                                .find_map(|line| {
+                                    let (name, value) = line.split_once(':')?;
+                                    name.eq_ignore_ascii_case("content-length")
+                                        .then(|| value.trim().parse().unwrap())
+                                })
+                                .unwrap();
+                            if bytes.len() >= end + 4 + length {
+                                break;
+                            }
+                        }
+                    }
+                    socket.write_all(format!(
+                        "HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()
+                    ).as_bytes()).await.unwrap();
+                    String::from_utf8(bytes).unwrap()
+                })
+                .await
+                .expect("bounded fake auth exchange");
+                requests.push(request);
+            }
+            requests
+        });
+        (endpoint, task)
+    }
+
+    fn request_form(request: &str) -> HashMap<String, String> {
+        assert!(request.starts_with("POST /token HTTP/1.1\r\n"));
+        let body = request.split_once("\r\n\r\n").unwrap().1;
+        reqwest::Url::parse(&format!("http://localhost/?{body}"))
+            .unwrap()
+            .query_pairs()
+            .into_owned()
+            .collect()
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn refresh_posts_contract_and_applies_rotated_credentials() {
+        let response = json!({"access_token":"rotated-access", "refresh_token":"rotated-refresh", "token_type":"Bearer", "expires_in":3600, "earliest_refresh_at":123, "scope":PLAN_SCOPE});
+        let (endpoint, server) = auth_server(vec![(200, response.to_string())]).await;
+        let mut account = account();
+        account.refresh_token = Some("fake +/& refresh".into());
+        let before = now();
+        renew_account(&Client::new(), &mut account, &endpoint)
+            .await
+            .unwrap();
+        let form = request_form(&server.await.unwrap()[0]);
+        assert_eq!(form.len(), 4);
+        assert_eq!(form["grant_type"], "refresh_token");
+        assert_eq!(form["client_id"], "issued-client");
+        assert_eq!(form["refresh_token"], "fake +/& refresh");
+        assert_eq!(form["resource"], API);
+        assert_eq!(account.access_token.as_deref(), Some("rotated-access"));
+        assert_eq!(account.refresh_token.as_deref(), Some("rotated-refresh"));
+        assert!(account.expires_at >= before + 3600);
+        assert_eq!(account.earliest_refresh_at, 123);
+        assert_eq!(account.scopes, vec![PLAN_SCOPE]);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn rejected_refresh_preserves_account_and_sanitizes_error() {
+        let (endpoint, server) = auth_server(vec![(401, "SECRET provider body".into())]).await;
+        let mut account = account();
+        let before = serde_json::to_value(&account).unwrap();
+        let error = renew_account(&Client::new(), &mut account, &endpoint)
+            .await
+            .unwrap_err();
+        assert_eq!(error, http_error(401));
+        assert!(!error.contains("SECRET"));
+        assert_eq!(serde_json::to_value(&account).unwrap(), before);
+        assert_eq!(server.await.unwrap().len(), 1);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn revocation_retries_server_failure_but_not_rejected_credentials() {
+        let (endpoint, server) = auth_server(vec![(503, "{}".into()), (200, "{}".into())]).await;
+        revoke_refresh_token(
+            &Client::new(),
+            endpoint.parse().unwrap(),
+            "client +&",
+            "refresh /+",
+        )
+        .await
+        .unwrap();
+        let requests = server.await.unwrap();
+        assert_eq!(requests.len(), 2);
+        for request in requests {
+            let form = request_form(&request);
+            assert_eq!(form.len(), 3);
+            assert_eq!(form["token"], "refresh /+");
+            assert_eq!(form["client_id"], "client +&");
+            assert_eq!(form["token_type_hint"], "refresh_token");
+        }
+        // A mistaken retry would receive 200 and make unwrap_err fail.
+        let (endpoint, server) = auth_server(vec![
+            (403, "SECRET provider body".into()),
+            (200, "{}".into()),
+        ])
+        .await;
+        assert_eq!(
+            revoke_refresh_token(
+                &Client::new(),
+                endpoint.parse().unwrap(),
+                "client",
+                "refresh"
+            )
+            .await
+            .unwrap_err(),
+            "Revocation was not confirmed."
+        );
+        server.abort();
+        assert!(server.await.unwrap_err().is_cancelled());
+    }
     #[test]
     fn callback_page_is_branded_and_does_not_claim_completed_connection() {
         let accepted = callback_response(true);
