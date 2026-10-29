@@ -365,12 +365,15 @@ impl CodexRuntimeManager {
         let pending = Arc::new(Mutex::new(HashMap::new()));
         let alive = Arc::new(AtomicBool::new(true));
         let stdin = Arc::new(Mutex::new(stdin));
+        let event_app = app.clone();
         spawn_reader(
             stdout,
             Arc::clone(&stdin),
             Arc::clone(&pending),
             Arc::clone(&alive),
-            app.clone(),
+            move |event| {
+                let _ = event_app.emit("void-mind://codex-event", event);
+            },
         );
         if let Some(stderr) = stderr {
             thread::spawn(move || {
@@ -428,13 +431,16 @@ impl CodexRuntimeManager {
     }
 }
 
-fn spawn_reader(
+fn spawn_reader<F>(
     stdout: ChildStdout,
     stdin: Arc<Mutex<ChildStdin>>,
     pending: PendingMap,
     alive: Arc<AtomicBool>,
-    app: AppHandle,
-) {
+    emit: F,
+) -> thread::JoinHandle<()>
+where
+    F: Fn(Value) + Send + 'static,
+{
     thread::spawn(move || {
         for line in BufReader::new(stdout).lines() {
             let Ok(line) = line else {
@@ -443,14 +449,11 @@ fn spawn_reader(
             let message: Value = match serde_json::from_str(&line) {
                 Ok(value) => value,
                 Err(_) => {
-                    let _ = app.emit(
-                        "void-mind://codex-event",
-                        json!({
-                            "type": "protocolError",
-                            "category": "protocolMismatch",
-                            "message": "Codex returned a malformed protocol message."
-                        }),
-                    );
+                    emit(json!({
+                        "type": "protocolError",
+                        "category": "protocolMismatch",
+                        "message": "Codex returned a malformed protocol message."
+                    }));
                     continue;
                 }
             };
@@ -462,7 +465,7 @@ fn spawn_reader(
                 continue;
             }
             if let Some(event) = normalize_notification(&message) {
-                let _ = app.emit("void-mind://codex-event", event);
+                emit(event);
             }
         }
         alive.store(false, Ordering::Release);
@@ -470,15 +473,12 @@ fn spawn_reader(
             &pending,
             "The Codex runtime exited before completing the request.",
         );
-        let _ = app.emit(
-            "void-mind://codex-event",
-            json!({
-                "type": "runtimeExited",
-                "category": "runtimeExited",
-                "message": "The Codex runtime exited."
-            }),
-        );
-    });
+        emit(json!({
+            "type": "runtimeExited",
+            "category": "runtimeExited",
+            "message": "The Codex runtime exited."
+        }));
+    })
 }
 
 fn dispatch_response(pending: &PendingMap, message: &Value) -> bool {
@@ -1193,6 +1193,155 @@ mod tests {
     };
     use serde_json::json;
     use std::path::{Path, PathBuf};
+
+    // Runs only in a child test binary selected by the process tests below.
+    #[test]
+    #[ignore = "isolated stdio fixture; invoked by lifecycle tests"]
+    fn stdio_process_fixture() {
+        use std::io::{self, BufRead, Write};
+        assert_eq!(std::env::var("VOID_MIND_STDIO_FIXTURE").as_deref(), Ok("1"));
+        println!(); // Separate libtest's status prefix from protocol output.
+        io::stdout().flush().unwrap();
+        for line in io::stdin().lock().lines() {
+            let request: serde_json::Value = serde_json::from_str(&line.unwrap()).unwrap();
+            match request["method"].as_str().unwrap() {
+                "crash" => std::process::exit(7),
+                "hold" => continue,
+                _ => {
+                    println!(
+                        "{}",
+                        json!({"id": request["id"], "result": {"ready": true}})
+                    );
+                    io::stdout().flush().unwrap();
+                }
+            }
+        }
+    }
+
+    struct TestRuntime {
+        client: std::sync::Arc<super::CodexClient>,
+        reader: Option<std::thread::JoinHandle<()>>,
+    }
+
+    impl TestRuntime {
+        fn start() -> Self {
+            use std::{
+                process::{Command, Stdio},
+                sync::{
+                    atomic::{AtomicBool, AtomicU64},
+                    Arc, Mutex,
+                },
+            };
+            let executable = std::env::current_exe().unwrap();
+            let mut child = Command::new(&executable)
+                .args([
+                    "--exact",
+                    "codex::tests::stdio_process_fixture",
+                    "--ignored",
+                    "--nocapture",
+                ])
+                .env("VOID_MIND_STDIO_FIXTURE", "1")
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .spawn()
+                .unwrap();
+            let stdin = Arc::new(Mutex::new(child.stdin.take().unwrap()));
+            let stdout = child.stdout.take().unwrap();
+            let pending = Arc::new(Mutex::new(Default::default()));
+            let alive = Arc::new(AtomicBool::new(true));
+            let reader = super::spawn_reader(
+                stdout,
+                stdin.clone(),
+                pending.clone(),
+                alive.clone(),
+                |_| {},
+            );
+            let client = Arc::new(super::CodexClient {
+                child: Mutex::new(child),
+                stdin,
+                pending,
+                alive,
+                next_id: AtomicU64::new(1),
+                executable_path: executable,
+                version: "test fixture".into(),
+                neutral_cwd: std::env::temp_dir(),
+            });
+            Self {
+                client,
+                reader: Some(reader),
+            }
+        }
+    }
+
+    impl Drop for TestRuntime {
+        fn drop(&mut self) {
+            self.client.shutdown();
+            if let Some(reader) = self.reader.take() {
+                reader.join().unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn real_child_exit_fails_in_flight_requests_and_disables_new_requests() {
+        use std::sync::atomic::Ordering;
+        let runtime = TestRuntime::start();
+        assert_eq!(
+            runtime.client.request("initialize", None).unwrap(),
+            json!({"ready": true})
+        );
+        assert_eq!(
+            runtime.client.request("crash", None).unwrap_err(),
+            "The Codex runtime exited before completing the request."
+        );
+        assert!(!runtime.client.alive.load(Ordering::Acquire));
+        assert!(runtime.client.pending.lock().unwrap().is_empty());
+        assert_eq!(
+            runtime.client.request("initialize", None).unwrap_err(),
+            "The Codex runtime is not running."
+        );
+        assert_eq!(
+            runtime.client.child.lock().unwrap().wait().unwrap().code(),
+            Some(7)
+        );
+    }
+
+    #[test]
+    fn shutdown_reaps_a_real_child_and_releases_an_unanswered_request() {
+        use std::{
+            sync::atomic::Ordering,
+            thread,
+            time::{Duration, Instant},
+        };
+        let runtime = TestRuntime::start();
+        runtime.client.request("initialize", None).unwrap();
+        let client = runtime.client.clone();
+        let request = thread::spawn(move || client.request("hold", None));
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while runtime.client.pending.lock().unwrap().is_empty() {
+            assert!(Instant::now() < deadline, "Request was not registered");
+            thread::sleep(Duration::from_millis(5));
+        }
+        runtime.client.shutdown();
+        let error = request.join().unwrap().unwrap_err();
+        assert!(
+            error == "The Codex runtime stopped."
+                || error == "The Codex runtime exited before completing the request."
+                || error == "Could not write to the Codex runtime."
+        );
+        assert!(!runtime.client.alive.load(Ordering::Acquire));
+        assert!(runtime.client.pending.lock().unwrap().is_empty());
+        assert!(runtime
+            .client
+            .child
+            .lock()
+            .unwrap()
+            .try_wait()
+            .unwrap()
+            .is_some());
+        runtime.client.shutdown(); // Repeated app-exit cleanup remains safe.
+    }
 
     #[test]
     fn correlates_out_of_order_responses_without_consuming_other_requests() {

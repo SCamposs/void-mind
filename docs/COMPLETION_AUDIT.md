@@ -8,7 +8,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 2 | Source + tests | Rust codex.rs and providers/codex.ts implement official app-server. |
 | 3 | Source reviewed | No browser token/cookie collection in integration. |
 | 4 | Partial | PATH/native npm-shim discovery exists; missing/executable permission/platform failure cases need stronger lifecycle tests. |
-| 5 | Partial | Manager starts/reuses/stops children; crash/shutdown/process-launch integration tests incomplete. |
+| 5 | Process tests pass; manager integration partial | Real isolated stdio child tests cover launch/request, unexpected exit failing an in-flight request, rejection after exit, shutdown releasing an unanswered request, child reaping and repeated cleanup. Actual Codex discovery/start/reuse and Tauri-exit integration remain separate gates. |
 | 6 | Source + tests | Central IDs/pending map/reader; direct tests cover out-of-order replies, duplicate/unknown IDs, sanitized errors and failure-drain behavior. |
 | 7 | Native observed | Direct connected account and live catalog recovered after preview restart. |
 | 8 | Native direct login observed | User completed official browser consent; direct account and catalog loaded. Legacy login start remains implemented but not freshly exercised. |
@@ -44,7 +44,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 38 | Partial native keyboard walkthrough | Ctrl+N draft, End/Enter model selection, Escape Context and focus return observed; Ctrl+K observed earlier. Compact navigation/history drawers isolate background accessibility; history Escape works. Final full walkthrough remains pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Verified checks | All 63 JS tests pass together; TypeScript/lint pass after new surface tests. 23 Rust tests passed previously; native source unchanged in this checkpoint. |
+| 41 | Verified checks | All 63 JS tests, TypeScript/lint passed at the last frontend checkpoint. Current Windows native suite: 25 passed; one isolated child fixture is skipped as a standalone test and invoked by its two lifecycle drivers. Cargo check and formatting pass. |
 | 42 | Windows build passed | Production and NSIS rebuild with MXC passed; Linux release unverified. |
 | 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
