@@ -36,7 +36,9 @@ jobs:
             libayatana-appindicator3-dev \
             libdbus-1-dev \
             librsvg2-dev \
-            libwebkit2gtk-4.1-dev
+            libwebkit2gtk-4.1-dev \
+            webkit2gtk-driver \
+            xvfb
 
       - uses: actions/setup-node@v7
         with:
@@ -69,3 +71,19 @@ jobs:
       - name: Build production desktop executable
         working-directory: apps/desktop
         run: npm run tauri -- build --no-bundle
+
+      - name: Install native Linux test driver
+        if: runner.os == 'Linux'
+        run: cargo install tauri-driver --locked
+
+      - name: Check first run without a provider
+        if: runner.os == 'Linux'
+        run: dbus-run-session -- xvfb-run --auto-servernum node scripts/check-desktop-onboarding.mjs
+
+      - name: Preserve native Linux acceptance evidence
+        if: always() && runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: Linux-native-onboarding
+          path: private/qa/onboarding-e2e/
+          if-no-files-found: ignore

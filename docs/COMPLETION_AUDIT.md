@@ -45,7 +45,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
 | 41 | Verified checks | All 63 JS tests, TypeScript/lint passed at the last frontend checkpoint. Current Windows native suite: 25 passed; one isolated child fixture is skipped as a standalone test and invoked by its two lifecycle drivers. Cargo check and formatting pass. |
-| 42 | Windows build passed | Production and NSIS rebuild with MXC passed; Linux release unverified. |
+| 42 | Windows and Linux production builds passed | CI run 40797193538 passed frontend checks, native tests and production Tauri executable builds on Windows and Ubuntu 22.04. Local current-source NSIS build passed. New Linux distributable bundles and alpha.1 publication remain unverified. |
 | 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
@@ -55,7 +55,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 ## Additional user-requested gates
 
 - Installer scope updated by the user after visual inspection: VOID header/sidebar/icons, native page bodies and controls. Full dark NSIS styling is no longer a requirement.
-- Inspect setup/uninstall pages and titlebar actions after the Windows capture/activation failure is resolved.
+- Updated setup welcome, same-version maintenance, destination, progress and installation-complete pages were inspected with the VOID icon/header/sidebar and native bodies. User clicked Finish and the installed application opened. Uninstaller inspection was interrupted by physical Escape; no uninstall validation is claimed. App maximize/close actions were verified earlier.
 - Publish alpha.1 only after required gates; prepared commits and local setup are not a published release.
 - Transfer design to sibling VOID only in a subsequent authorized phase. Current phase keeps it read-only.
 
