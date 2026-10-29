@@ -104,6 +104,46 @@ jobs:
         working-directory: apps/desktop
         run: npm run tauri -- bundle --bundles deb,appimage
 
+      - name: Verify packaged Linux applications
+        if: github.event_name == 'workflow_dispatch' && inputs.package && runner.os == 'Linux'
+        run: |
+          deb="$(find apps/desktop/src-tauri/target/release/bundle/deb -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          appimage="$(find apps/desktop/src-tauri/target/release/bundle/appimage -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+          test -n "$deb"
+          test -n "$appimage"
+          expected_version="$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")"
+          test "$(dpkg-deb --field "$deb" Version)" = "$expected_version"
+          test "$(dpkg-deb --field "$deb" Architecture)" = "amd64"
+          dpkg-deb --field "$deb" Package Version Architecture Depends
+          sha256sum "$deb" "$appimage"
+
+          deb_root="$RUNNER_TEMP/void-mind-deb"
+          mkdir -p "$deb_root"
+          dpkg-deb --extract "$deb" "$deb_root"
+          test -x "$deb_root/usr/bin/void-mind-desktop"
+          VOID_MIND_E2E_APP="$deb_root/usr/bin/void-mind-desktop" \
+            VOID_MIND_E2E_KIND=deb VOID_MIND_E2E_OUTPUT=private/qa/deb-e2e \
+            dbus-run-session -- xvfb-run --auto-servernum node scripts/check-desktop-onboarding.mjs
+
+          appimage_path="$(realpath "$appimage")"
+          appimage_root="$RUNNER_TEMP/void-mind-appimage"
+          mkdir -p "$appimage_root"
+          (cd "$appimage_root" && "$appimage_path" --appimage-extract > /dev/null)
+          test -x "$appimage_root/squashfs-root/AppRun"
+          VOID_MIND_E2E_APP="$appimage_root/squashfs-root/AppRun" \
+            VOID_MIND_E2E_KIND=appimage VOID_MIND_E2E_OUTPUT=private/qa/appimage-e2e \
+            dbus-run-session -- xvfb-run --auto-servernum node scripts/check-desktop-onboarding.mjs
+
+      - name: Preserve packaged Linux acceptance evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.package && runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: Linux-packaged-acceptance
+          path: |
+            private/qa/deb-e2e/
+            private/qa/appimage-e2e/
+          if-no-files-found: ignore
+
       - name: Preserve installable validation packages
         if: github.event_name == 'workflow_dispatch' && inputs.package
         uses: actions/upload-artifact@v7

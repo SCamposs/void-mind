@@ -16,7 +16,9 @@ if (process.platform !== "linux" || process.env.CI !== "true") {
   throw new Error("Run this desktop check only on an isolated Linux CI runner.");
 }
 const root = fileURLToPath(new URL("../", import.meta.url));
-const output = resolve(root, "private/qa/onboarding-e2e");
+const output = resolve(root, process.env.VOID_MIND_E2E_OUTPUT ?? "private/qa/onboarding-e2e");
+const application = process.env.VOID_MIND_E2E_APP ?? join(root, "apps/desktop/src-tauri/target/release/void-mind-desktop");
+const applicationKind = process.env.VOID_MIND_E2E_KIND ?? "unbundled";
 const profile = await mkdtemp(join(tmpdir(), "void-mind-onboarding-"));
 await mkdir(output, { recursive: true });
 const profileEnv = {};
@@ -85,7 +87,7 @@ async function startSession() {
   const created = await command("POST", "/session", {
     capabilities: { alwaysMatch: {
       browserName: "wry",
-      "tauri:options": { application: join(root, "apps/desktop/src-tauri/target/release/void-mind-desktop") }
+      "tauri:options": { application }
     } }
   });
   session = created.sessionId;
@@ -165,7 +167,7 @@ try {
   await until("workspace removal", () => evaluate("return document.querySelector('.workspace-list')?.textContent.includes('No workspaces yet.');"));
   await screenshot("04-workspace-deleted");
   checks.push("Synthetic workspace deletion requires confirmation; Keep preserves it and Delete removes it.");
-  await writeFile(join(output, "receipt.json"), JSON.stringify({ platform: process.platform, checks }, null, 2));
+  await writeFile(join(output, "receipt.json"), JSON.stringify({ platform: process.platform, applicationKind, commit: process.env.GITHUB_SHA, checks }, null, 2));
   checks.forEach(check => console.log(`PASS: ${check}`));
 } catch (error) {
   if (session) await screenshot("failure").catch(() => undefined);
