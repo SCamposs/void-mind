@@ -356,3 +356,12 @@ export function activeSettings(state: MindStore): GenerationSettings {
     state.selectedProfileId
   ).settings;
 }
+
+export function globalModel(
+  state: Pick<MindState, "models" | "defaultPreference">
+): ModelDescriptor | undefined {
+  const { providerId, modelId } = state.defaultPreference;
+  return state.models.find((model) => model.providerId === providerId && (
+    modelId ? model.id === modelId : model.isDefault
+  ));
+}

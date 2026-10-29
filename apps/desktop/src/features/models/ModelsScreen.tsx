@@ -5,7 +5,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { LlamaServerProvider } from "@void-mind/providers";
 import { runtimeBridge } from "../../lib/runtime-bridge";
 import { ConnectionsPanel } from "../../components/ConnectionsPanel";
-import { useMindStore } from "../../stores/mind-store";
+import { globalModel, useMindStore } from "../../stores/mind-store";
 import { SelectControl } from "../../components/SelectControl";
 
 type ActionState = "idle" | "working" | "success" | "error";
@@ -14,7 +14,7 @@ export function ModelsScreen() {
   const state = useMindStore();
   const [runtimeAction, setRuntimeAction] = useState<ActionState>("idle");
   const [runtimeMessage, setRuntimeMessage] = useState("");
-  const selectedModel = state.models.find((model) => model.id === state.selectedModelId);
+  const selectedModel = globalModel(state);
   const visibleModels = state.models.filter((model) => model.providerId !== "openai-codex" || state.defaultPreference.providerId === "openai-codex");
 
   const checkRuntime = async () => {
@@ -225,25 +225,28 @@ export function ModelsScreen() {
           </div>
           {visibleModels.length ? (
             <div className="model-list">
-              {visibleModels.map((model) => (
-                <Button
-                  type="button"
-                  key={model.id}
-                  className={state.selectedModelId === model.id ? "is-active" : ""}
-                  onClick={() => state.setDefaultPreference({
-                    providerId: model.providerId,
-                    modelId: model.id,
-                    reasoningEffort: model.defaultReasoningEffort,
-                    serviceTier: model.defaultServiceTier
-                  })}
-                >
-                  <span>
-                    <strong>{model.displayName}</strong>
-                    <small>{model.providerId === "openai-codex" ? "Codex (legacy)" : model.providerId === "openai-chatgpt" ? "ChatGPT plan" : model.providerId === "openai-api" ? "OpenAI API" : model.format || "llama.cpp"} · {model.location}</small>
-                  </span>
-                  <span>{state.selectedModelId === model.id ? "Active" : "Use model"}</span>
-                </Button>
-              ))}
+              {visibleModels.map((model) => {
+                const active = selectedModel?.id === model.id && selectedModel?.providerId === model.providerId;
+                return (
+                  <Button
+                    type="button"
+                    key={model.id}
+                    className={active ? "is-active" : ""}
+                    onClick={() => state.setDefaultPreference({
+                      providerId: model.providerId,
+                      modelId: model.id,
+                      reasoningEffort: model.defaultReasoningEffort,
+                      serviceTier: model.defaultServiceTier
+                    })}
+                  >
+                    <span>
+                      <strong>{model.displayName}</strong>
+                      <small>{model.providerId === "openai-codex" ? "Codex (legacy)" : model.providerId === "openai-chatgpt" ? "ChatGPT plan" : model.providerId === "openai-api" ? "OpenAI API" : model.format || "llama.cpp"} · {model.location}</small>
+                    </span>
+                    <span>{active ? "Active" : "Use model"}</span>
+                  </Button>
+                );
+              })}
             </div>
           ) : (
             <p className="section-empty">No model metadata has been discovered yet.</p>

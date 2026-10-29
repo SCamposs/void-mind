@@ -17,7 +17,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 11 | Source reviewed | Persistence uses product-state allowlist, excluding transient account/auth state. |
 | 12 | Observed earlier | Native catalog loaded; model normalization covered by fixture tests. |
 | 13 | Source + tests | Catalog comes from runtime; test model names are fixtures. |
-| 14 | Source reviewed | Runtime reasoning metadata drives selectors; a selector now requires multiple supported efforts, as specified. Native interactive switching remains pending. |
+| 14 | Global capability binding regression fixed and tested | Native inspection found stale legacy metadata supplying options while the global provider was direct ChatGPT. Intelligence now resolves its Active badge/options from the global provider/model preference, independently of catalog-selection state. Store/UI tests cover interleaved catalog refreshes, missing explicit models, provider defaults and control appearance/removal on preference changes. A fresh installed-source check of this correction is pending. |
 | 15 | Native legacy and direct inference observed | Portuguese explanations and contextual follow-ups completed on both paths. Incremental direct text was observed at separate partial stages. |
 | 16 | Native legacy and direct Stop observed | Both partials survived restart. Direct Stop preserved an unfinished item, settled to idle, remained stable and allowed a successful contextual follow-up. |
 | 17 | Source + tests | Product conversation ID and remote binding are separate; resume test passes. |
@@ -56,6 +56,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 
 - Installer scope updated by the user after visual inspection: VOID header/sidebar/icons, native page bodies and controls. Full dark NSIS styling is no longer a requirement.
 - Updated setup welcome, same-version maintenance, destination, progress and installation-complete pages were inspected with the VOID icon/header/sidebar and native bodies. User clicked Finish and the installed application opened. Uninstaller inspection was interrupted by physical Escape; no uninstall validation is claimed. App maximize/close actions were verified earlier.
+- The e6ba3b5 Windows candidate was subsequently installed with explicit action-time user authorization. Add/Reinstall was used at the exact existing executable directory; setup completed and Run VOID Mind opened the app with its connected account and prior workspace/source/history. A later Intelligence model-binding bug was then found and fixed in source; that frontend correction is not claimed as installed by this receipt.
 - Publish alpha.1 only after required gates; prepared commits and local setup are not a published release.
 - Transfer design to sibling VOID only in a subsequent authorized phase. Current phase keeps it read-only.
 

@@ -7,7 +7,7 @@ import {
 } from "@void-mind/mind-core";
 import { DEFAULT_MIND_STATE } from "@void-mind/persistence";
 import { beforeEach, describe, expect, it } from "vitest";
-import { useMindStore } from "./mind-store";
+import { globalModel, useMindStore } from "./mind-store";
 
 describe("mind store streaming updates", () => {
   beforeEach(() => {
@@ -190,5 +190,36 @@ describe("mind store streaming updates", () => {
       contextKnowledgeIds: []
     });
     expect(state.conversations[0].workspaceId).toBeUndefined();
+  });
+
+  it("keeps global model options bound to the global preference across catalog selection changes", () => {
+    const model = (providerId: string, isDefault = false): ModelDescriptor => ({
+      id: `${providerId}:model`, displayName: "Model", identifier: "model", version: "test",
+      providerId, location: "remote", languages: [], capabilities: [], isDefault
+    });
+    const legacy = { ...model("openai-codex", true), reasoningEfforts: [{ id: "low", description: "Low" }, { id: "high", description: "High" }] };
+    const direct = model("openai-chatgpt", true);
+    useMindStore.setState({
+      models: [legacy, direct], selectedModelId: legacy.id,
+      defaultPreference: { providerId: direct.providerId, modelId: direct.id }
+    });
+    expect(globalModel(useMindStore.getState())).toEqual(direct);
+    expect(globalModel(useMindStore.getState())?.reasoningEfforts).toBeUndefined();
+    useMindStore.getState().setProviderModels("openai-chatgpt", []);
+    expect(globalModel(useMindStore.getState())).toBeUndefined();
+    useMindStore.getState().setProviderModels("openai-chatgpt", [direct]);
+    expect(useMindStore.getState().selectedModelId).toBe(legacy.id);
+    expect(globalModel(useMindStore.getState())).toEqual(direct);
+  });
+
+  it("resolves only the global provider default when no model is chosen and never replaces a missing explicit model", () => {
+    const legacy: ModelDescriptor = {
+      id: "shared-id", displayName: "Legacy", identifier: "model", version: "test",
+      providerId: "openai-codex", location: "remote", languages: [], capabilities: [], isDefault: true
+    };
+    const direct = { ...legacy, id: "direct-id", displayName: "Direct", providerId: "openai-chatgpt" };
+    const models = [legacy, direct];
+    expect(globalModel({ models, defaultPreference: { providerId: "openai-chatgpt" } })).toBe(direct);
+    expect(globalModel({ models, defaultPreference: { providerId: "openai-chatgpt", modelId: "shared-id" } })).toBeUndefined();
   });
 });
