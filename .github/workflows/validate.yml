@@ -1,0 +1,71 @@
+name: Desktop validation
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**/*.md', 'lab/**', 'pyproject.toml', 'uv.lock', '.gitignore']
+  pull_request:
+    paths-ignore: ['**/*.md', 'lab/**', 'pyproject.toml', 'uv.lock', '.gitignore']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    name: Validate ${{ matrix.platform }}
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest, ubuntu-22.04]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libayatana-appindicator3-dev \
+            libdbus-1-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Validate frontend
+        run: |
+          npm run lint
+          npm run typecheck
+          npm run test
+
+      - name: Validate native application
+        run: |
+          cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml
+          cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+
+      - name: Build production desktop executable
+        working-directory: apps/desktop
+        run: npm run tauri -- build --no-bundle
