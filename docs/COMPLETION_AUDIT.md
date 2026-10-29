@@ -44,8 +44,8 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 38 | Partial native keyboard walkthrough | Ctrl+N draft, End/Enter model selection, Escape Context and focus return observed; Ctrl+K observed earlier. Compact navigation/history drawers isolate background accessibility; history Escape works. Final full walkthrough remains pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Verified checks | Current-source Linux run 40802054782 passed all 64 JS tests/19 files, TypeScript/lint, 26 Rust tests and graphical acceptance. Current native code also passed all 26 Windows Rust tests locally; its standalone child fixture is intentionally skipped and invoked by lifecycle drivers. Final Windows CI completion remains pending. |
-| 42 | Windows and Linux production builds passed | Local production/NSIS build from e47b4f5 passed; Linux production Tauri build passed in run 40802054782. Final Windows CI completion, new Linux distributable bundles and alpha.1 publication remain pending. |
+| 41 | Verified cross-platform checks | Run 40802054782 passed 64 JS tests/19 files, TypeScript/lint and 26 Rust tests on each platform; Linux additionally passed graphical acceptance. The standalone native child fixture is intentionally skipped and invoked by lifecycle drivers. |
+| 42 | Windows and Linux production builds passed | Both production Tauri executable builds passed in run 40802054782; local current-source NSIS build also passed. New Linux distributable bundles and alpha.1 publication remain pending. |
 | 43 | Verified regression | All six existing Python tests and Ruff passed again after the current environment changes; lab source remains untouched. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
