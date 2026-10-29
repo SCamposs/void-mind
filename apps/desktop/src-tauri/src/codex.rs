@@ -718,8 +718,16 @@ fn native_codex_from_npm_shim(shim: &Path) -> Option<PathBuf> {
 }
 
 fn resolve_codex_candidate(path: &Path) -> Option<PathBuf> {
-    if !path.is_file() || !is_codex_name(path) {
+    let metadata = path.metadata().ok()?;
+    if !metadata.is_file() || !is_codex_name(path) {
         return None;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if metadata.permissions().mode() & 0o111 == 0 {
+            return None;
+        }
     }
     #[cfg(windows)]
     if matches!(
@@ -1408,6 +1416,41 @@ mod tests {
         assert!(is_codex_name(Path::new("codex.exe")));
         assert!(is_codex_name(Path::new("codex")));
         assert!(!is_codex_name(Path::new("powershell.exe")));
+    }
+
+    #[test]
+    fn discovery_skips_missing_files_directories_and_unrelated_names() {
+        let root =
+            std::env::temp_dir().join(format!("void-mind-discovery-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        assert!(resolve_codex_candidate(&root.join("codex.exe")).is_none());
+        let directory = root.join("codex");
+        std::fs::create_dir(&directory).unwrap();
+        assert!(resolve_codex_candidate(&directory).is_none());
+        let unrelated = root.join("unrelated.exe");
+        std::fs::write(&unrelated, []).unwrap();
+        assert!(resolve_codex_candidate(&unrelated).is_none());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn discovery_requires_execute_permission_on_unix() {
+        use std::os::unix::fs::PermissionsExt;
+        let root =
+            std::env::temp_dir().join(format!("void-mind-permissions-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        let binary = root.join("codex");
+        std::fs::write(&binary, "#!/bin/sh\nexit 0\n").unwrap();
+        std::fs::set_permissions(&binary, std::fs::Permissions::from_mode(0o600)).unwrap();
+        assert!(resolve_codex_candidate(&binary).is_none());
+        std::fs::set_permissions(&binary, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert_eq!(resolve_codex_candidate(&binary), binary.canonicalize().ok());
+        assert!(std::process::Command::new(&binary)
+            .status()
+            .unwrap()
+            .success());
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

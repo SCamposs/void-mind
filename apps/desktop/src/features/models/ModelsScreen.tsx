@@ -250,7 +250,7 @@ export function ModelsScreen() {
           )}
           {selectedModel && (
             <div className="model-options">
-              {selectedModel.reasoningEfforts && selectedModel.reasoningEfforts.length > 0 && (
+              {selectedModel.reasoningEfforts && selectedModel.reasoningEfforts.length > 1 && (
                 <div className="field">
                   <span>Reasoning effort</span>
                   <SelectControl

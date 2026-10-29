@@ -7,7 +7,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 1 | Native primary connection observed | Home/onboarding prioritize ChatGPT; direct account/catalog/inference observed. First-run acceptance remains pending. |
 | 2 | Source + tests | Rust codex.rs and providers/codex.ts implement official app-server. |
 | 3 | Source reviewed | No browser token/cookie collection in integration. |
-| 4 | Partial | PATH/native npm-shim discovery exists; missing/executable permission/platform failure cases need stronger lifecycle tests. |
+| 4 | Source + discovery tests; platform checks partial | PATH/native npm-shim discovery exists. New tests reject missing files, directories and unrelated names. Unix candidates now require an execute bit, with a permission-change/launch test pending Linux CI. Windows ACL/unsupported-executable behavior and bounded version probing remain open. |
 | 5 | Process tests pass; manager integration partial | Real isolated stdio child tests cover launch/request, unexpected exit failing an in-flight request, rejection after exit, shutdown releasing an unanswered request, child reaping and repeated cleanup. Actual Codex discovery/start/reuse and Tauri-exit integration remain separate gates. |
 | 6 | Source + tests | Central IDs/pending map/reader; direct tests cover out-of-order replies, duplicate/unknown IDs, sanitized errors and failure-drain behavior. |
 | 7 | Native observed | Direct connected account and live catalog recovered after preview restart. |
@@ -17,7 +17,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 11 | Source reviewed | Persistence uses product-state allowlist, excluding transient account/auth state. |
 | 12 | Observed earlier | Native catalog loaded; model normalization covered by fixture tests. |
 | 13 | Source + tests | Catalog comes from runtime; test model names are fixtures. |
-| 14 | Source reviewed | Runtime reasoning metadata drives selectors; interactive switching pending. |
+| 14 | Source reviewed | Runtime reasoning metadata drives selectors; a selector now requires multiple supported efforts, as specified. Native interactive switching remains pending. |
 | 15 | Native legacy and direct inference observed | Portuguese explanations and contextual follow-ups completed on both paths. Incremental direct text was observed at separate partial stages. |
 | 16 | Native legacy and direct Stop observed | Both partials survived restart. Direct Stop preserved an unfinished item, settled to idle, remained stable and allowed a successful contextual follow-up. |
 | 17 | Source + tests | Product conversation ID and remote binding are separate; resume test passes. |

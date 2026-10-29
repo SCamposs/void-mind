@@ -122,6 +122,11 @@ try {
   await screenshot("02-explore-home");
   checks.push("Explore first opens Home; generation is unavailable without a configured provider.");
 
+  await click("Intelligence");
+  await heading("Intelligence");
+  await button("Check local runtime");
+  checks.push("Intelligence opens without a configured provider or installed Codex requirement.");
+
   await click("Workspaces");
   await heading("Workspaces");
   await click("New workspace");
@@ -133,7 +138,7 @@ try {
   await screenshot("03-workspace");
   await closeSession();
   await startSession();
-  await until("persisted onboarding completion", () => evaluate("return !document.querySelector('.onboarding-screen') && !!document.querySelector('nav');"));
+  await until("boot completion and persisted onboarding", () => evaluate("return !document.querySelector('.onboarding-screen') && !!document.querySelector('.app-root-surface:not([inert]) nav');"));
   await click("Workspaces");
   await until("persisted instructions", () => evaluate("return document.querySelector('.workspace-editor textarea[rows=\"8\"]')?.value === 'Synthetic native acceptance instructions.';"));
   checks.push("Workspace creation, rename, instructions and onboarding completion survive an actual app-session restart.");
