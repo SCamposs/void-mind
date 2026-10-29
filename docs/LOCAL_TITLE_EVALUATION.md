@@ -10,6 +10,14 @@ The product keeps the VOID visual identity. The candidate's Apache-2.0 license r
 
 The official non-thinking mode was checked using `enable_thinking=False` and `add_generation_prompt=True`, separate roles and the rendered tokenizer template. The original Safetensors revision was pinned before download and verified. The reference runtime used CPU FP32. Quantization and production distribution remain unselected and unmeasured; no further models may be downloaded as part of this completed experiment.
 
+## Deferred optional provider titles
+
+The user reaffirmed that deterministic extraction remains the default and the evaluated Qwen configuration is NO-GO. No further training, benchmarks or title feature implementation belongs in the alpha.1 goal; title research must not block the release.
+
+A future, separately scoped option may use the already connected provider for an additional background title request. It must be opt-in, disclose possible plan-quota consumption or API charges, minimize context, preserve manual renames and retain deterministic fallback. No extra requests are activated by this decision.
+
+The public Codex TUI reference below uses a separate structured title request, a 960-byte request-context bound and a 36-character title bound, preserving manual names and preferring a fast model with low reasoning when available. It does not establish ChatGPT internals or imply free generation. This is a future behavioral reference, not an alpha.1 dependency.
+
 ## Decision to evaluate
 
 Compare two approaches to the first user message:
