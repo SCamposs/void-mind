@@ -7,7 +7,7 @@
 - External local-server mode: **Implemented**
 - Managed local runtime: **Implemented foundation**
 - ChatGPT plan provider: **Implemented; native authentication, inference, Stop, continuation and restart recovery observed**
-- OpenAI API-key provider: **Implemented; real key inference QA pending**
+- OpenAI API-key provider: **Implemented; real-key QA deferred by the user to [issue #2](https://github.com/SCamposs/void-mind/issues/2), outside alpha.1 acceptance**
 - OpenAI Codex provider: **Implemented, legacy runtime connection**
 - Additional remote providers: **Future**
 

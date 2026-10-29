@@ -64,6 +64,8 @@ This is an open audit, not a completion declaration. The user subsequently appro
 
 Direct `openai-chatgpt` and `openai-api` providers are implemented separately from the legacy Codex provider. Primary login no longer requires Codex installation. The older Codex runtime is retained for existing bindings; it is not a prerequisite for direct login. Fresh browser consent, direct catalog, real inference, visible incremental streaming, Stop and contextual continuation passed natively. Post-inference restart recovered the connected account, catalog and full conversation, including stopped content. A subsequent workspace/source request succeeded without another login. Real API-key inference and credential refresh/revocation remain unverified.
 
+On 2026-10-29 the user explicitly deferred real API-key validation to [issue #2](https://github.com/SCamposs/void-mind/issues/2), outside alpha.1 acceptance. The provider stays implemented and its automated tests remain required. No API-key entry or billable API call is authorized for the current phase. That decision does not defer credential refresh/revocation checks for the primary ChatGPT connection.
+
 All app-authored buttons/fields/selectors/checks/switches/numbers/segments/disclosures now use shared Base UI primitives. Primary scroll areas use Base UI with matching native fallback styling for text/code/list overflow. Native compact navigation/history drawers isolated background accessibility; the rebuilt history dialog exposed its corrected accessible name and closed with Escape. Final all-surface keyboard, visual and reduced-motion acceptance remains open.
 
 ## Resumption after the isolated title experiment

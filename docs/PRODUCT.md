@@ -52,7 +52,7 @@ The implemented target is WCAG 2.2 AA for text contrast, keyboard access, semant
 | --- | --- | --- |
 | Home | Implemented | Luminous entry composer, recent conversations, workspaces, and provider state |
 | Conversations | Implemented | Persisted management, Codex thread binding, streaming, interruption, and context inspection |
-| Intelligence | Implemented; direct login/inference/Stop observed | Primary ChatGPT sign-in, discreet OpenAI API key, separate account/catalog handling, legacy Codex and local runtime. API-key inference and credential refresh/revocation QA remain open |
+| Intelligence | Implemented; direct login/inference/Stop observed | Primary ChatGPT sign-in, discreet OpenAI API key, separate account/catalog handling, legacy Codex and local runtime. Real API-key QA deferred by the user to issue #2; credential refresh/revocation QA remains open |
 | Settings | Implemented | Profiles, advanced generation controls, retention, and intro preference |
 | Workspaces | Implemented | CRUD, instructions, conversation grouping, and inherited provider preference |
 | Knowledge | Implemented first layer | Explicit Markdown/text imports, managed copies, previews, and conversation selection |
