@@ -1,6 +1,6 @@
 # Local title generation: feasibility assessment
 
-Status: candidate selected, experiment not executed. On 2026-10-28 the user chose `Qwen/Qwen3-0.6B` as the first candidate, using its pretrained weights without training. No model has been downloaded, benchmarked or integrated for this feature. The main environment goal remains paused and the existing `lab/` remains in standby.
+Status: isolated experiment completed, **not approved for integration**. On 2026-10-28 the user chose `Qwen/Qwen3-0.6B` as the first candidate, using its pretrained weights without training. Three bounded prompt configurations were evaluated offline, including a final zero-shot run with official template/sampling checks and separate development/final sets. Reliability remained insufficient. See [LOCAL_TITLE_RESULTS.md](LOCAL_TITLE_RESULTS.md) for raw examples, latency, memory, preservation checks and limits. There was no training or product integration; the main environment goal remains paused and `lab/` remains in standby.
 
 ## Final user decision
 
@@ -8,7 +8,7 @@ The scope is one practical product function: generate a short conversation title
 
 The product keeps the VOID visual identity. The candidate's Apache-2.0 license requires applicable distribution notices, not a decorative provider credit in the composer or conversation. Preserve its license and any applicable NOTICE material with distributed artifacts/documentation. Do not claim the pretrained weights were created or trained by Mind.
 
-The official model card documents a non-thinking mode. Evaluate title generation with thinking explicitly disabled through the runtime's supported hard switch, a bounded input/output budget and a fixed recorded configuration. Do not rely only on a `/no_think` phrase inside an untrusted user prompt. Pin the exact model revision and record the runtime/format before any download or benchmark; quantization and distribution format are not yet selected.
+The official non-thinking mode was checked using `enable_thinking=False` and `add_generation_prompt=True`, separate roles and the rendered tokenizer template. The original Safetensors revision was pinned before download and verified. The reference runtime used CPU FP32. Quantization and production distribution remain unselected and unmeasured; no further models may be downloaded as part of this completed experiment.
 
 ## Decision to evaluate
 
@@ -21,7 +21,7 @@ Starting from a pretrained base avoids having to learn general language from scr
 
 ## Current machine receipt
 
-Read-only Windows hardware inspection on 2026-10-28 reported an AMD Ryzen 5 5600X, 12 logical processors, approximately 23.9 GiB system memory and an AMD Radeon RX 6600. The virtual display adapter is not an inference device. GPU acceleration support and usable VRAM were not verified; do not infer them from the device name. There is no throughput measurement or defensible training-duration estimate yet.
+Read-only Windows hardware inspection on 2026-10-28 reported an AMD Ryzen 5 5600X, 12 logical processors, approximately 23.9 GiB system memory and an AMD Radeon RX 6600. The virtual display adapter is not an inference device. GPU acceleration support and usable VRAM were not verified; do not infer them from the device name. CPU inference was measured in the isolated experiment; no training-duration estimate is relevant to this no-training decision.
 
 ## Isolation requirements for a future experiment
 
