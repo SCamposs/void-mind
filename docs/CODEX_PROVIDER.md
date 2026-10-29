@@ -7,7 +7,9 @@ VOID Mind retains the official Codex app-server for legacy conversation bindings
 1. Spawn `codex app-server --stdio` with piped stdin/stdout and a drained stderr.
 2. Send `initialize`, then the `initialized` notification.
 3. Correlate request IDs centrally and normalize only product-relevant notifications.
-4. On application exit, close stdin and kill/wait for the child if required.
+4. On application exit, fail pending requests and close shared stdin to signal EOF. Allow up to 500 ms for cooperative exit, then kill/wait for the owned child if required. If a writer already holds stdin, skip the grace period and terminate the child without waiting for that input lock. Cleanup is repeatable.
+
+Real isolated child tests cover cooperative exit with status zero, an EOF-ignoring child requiring forced termination, cleanup while the input lock is held, and the manager taking/stopping its owned client on exit. These tests do not replace a full Tauri-exit walkthrough or prove arbitrary descendant-process cleanup.
 
 Malformed lines, timeouts, exits, and unsupported server requests become bounded errors. Tokens, authorization URLs, raw protocol payloads, prompts, and assistant content are not logged.
 

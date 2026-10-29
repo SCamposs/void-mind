@@ -23,12 +23,14 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
+const SHUTDOWN_GRACE: Duration = Duration::from_millis(500);
 const VERSION_PROBE_TIMEOUT: Duration = Duration::from_secs(2);
 const VERSION_OUTPUT_LIMIT: u64 = 4096;
 const GENERAL_INSTRUCTIONS: &str = "You are the intelligence provider inside VOID Mind, a general-purpose workspace for natural conversation, reasoning, writing, explanation, brainstorming, study, and everyday assistance. Respond as a calm general-purpose assistant. Do not use shell commands, edit files, inspect repositories, invoke tools, or request project access. Answer directly in natural language.";
 
 type PendingResponse = Result<Value, String>;
 type PendingMap = Arc<Mutex<HashMap<u64, SyncSender<PendingResponse>>>>;
+type SharedInput = Arc<Mutex<Option<ChildStdin>>>;
 
 #[derive(Clone, Default)]
 pub struct CodexRuntimeManager {
@@ -44,7 +46,7 @@ struct CodexManagerState {
 
 struct CodexClient {
     child: Mutex<Child>,
-    stdin: Arc<Mutex<ChildStdin>>,
+    stdin: SharedInput,
     pending: PendingMap,
     next_id: AtomicU64,
     alive: Arc<AtomicBool>,
@@ -237,10 +239,16 @@ impl CodexClient {
     }
 
     fn write_message(&self, message: &Value) -> Result<(), String> {
-        let mut stdin = self
+        let mut input = self
             .stdin
             .lock()
             .map_err(|_| "Codex input is unavailable.".to_string())?;
+        if !self.alive.load(Ordering::Acquire) {
+            return Err("The Codex runtime is not running.".into());
+        }
+        let stdin = input
+            .as_mut()
+            .ok_or_else(|| "Codex input is closed.".to_string())?;
         serde_json::to_writer(&mut *stdin, message)
             .map_err(|_| "Could not encode a Codex protocol request.".to_string())?;
         stdin
@@ -251,13 +259,34 @@ impl CodexClient {
 
     fn shutdown(&self) {
         self.alive.store(false, Ordering::Release);
+        fail_pending(&self.pending, "The Codex runtime stopped.");
+        // Closing the shared input sends EOF even while the reader owns a clone.
+        // Never wait for a writer holding the pipe: killing the owned child below
+        // releases a blocked write instead of blocking application exit on it.
+        let input_closed = if let Ok(mut input) = self.stdin.try_lock() {
+            input.take();
+            true
+        } else {
+            false
+        };
         if let Ok(mut child) = self.child.lock() {
+            let deadline = Instant::now() + SHUTDOWN_GRACE;
+            while input_closed {
+                match child.try_wait() {
+                    Ok(Some(_)) => break,
+                    Err(_) => break,
+                    Ok(None) if Instant::now() >= deadline => break,
+                    Ok(None) => thread::sleep(Duration::from_millis(10)),
+                }
+            }
             if child.try_wait().ok().flatten().is_none() {
                 let _ = child.kill();
             }
             let _ = child.wait();
         }
-        fail_pending(&self.pending, "The Codex runtime stopped.");
+        if let Ok(mut input) = self.stdin.try_lock() {
+            input.take();
+        }
     }
 }
 
@@ -366,7 +395,7 @@ impl CodexRuntimeManager {
 
         let pending = Arc::new(Mutex::new(HashMap::new()));
         let alive = Arc::new(AtomicBool::new(true));
-        let stdin = Arc::new(Mutex::new(stdin));
+        let stdin = Arc::new(Mutex::new(Some(stdin)));
         let event_app = app.clone();
         spawn_reader(
             stdout,
@@ -435,7 +464,7 @@ impl CodexRuntimeManager {
 
 fn spawn_reader<F>(
     stdout: ChildStdout,
-    stdin: Arc<Mutex<ChildStdin>>,
+    stdin: SharedInput,
     pending: PendingMap,
     alive: Arc<AtomicBool>,
     emit: F,
@@ -503,7 +532,7 @@ fn dispatch_response(pending: &PendingMap, message: &Value) -> bool {
     true
 }
 
-fn reject_server_request(stdin: &Arc<Mutex<ChildStdin>>, request: &Value) {
+fn reject_server_request(stdin: &SharedInput, request: &Value) {
     let response = json!({
         "id": request.get("id").cloned().unwrap_or(Value::Null),
         "error": {
@@ -511,7 +540,10 @@ fn reject_server_request(stdin: &Arc<Mutex<ChildStdin>>, request: &Value) {
             "message": "VOID Mind does not expose tools or approval workflows."
         }
     });
-    if let Ok(mut writer) = stdin.lock() {
+    if let Ok(mut input) = stdin.lock() {
+        let Some(writer) = input.as_mut() else {
+            return;
+        };
         let _ = serde_json::to_writer(&mut *writer, &response);
         let _ = writer.write_all(b"\n");
         let _ = writer.flush();
@@ -1335,6 +1367,9 @@ mod tests {
                 }
             }
         }
+        if std::env::var("VOID_MIND_IGNORE_EOF").as_deref() == Ok("1") {
+            std::thread::sleep(std::time::Duration::from_secs(60));
+        }
     }
 
     struct TestRuntime {
@@ -1444,6 +1479,10 @@ mod tests {
 
     impl TestRuntime {
         fn start() -> Self {
+            Self::start_with_eof_behavior(false)
+        }
+
+        fn start_with_eof_behavior(ignore_eof: bool) -> Self {
             use std::{
                 process::{Command, Stdio},
                 sync::{
@@ -1460,12 +1499,13 @@ mod tests {
                     "--nocapture",
                 ])
                 .env("VOID_MIND_STDIO_FIXTURE", "1")
+                .env("VOID_MIND_IGNORE_EOF", if ignore_eof { "1" } else { "0" })
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::null())
                 .spawn()
                 .unwrap();
-            let stdin = Arc::new(Mutex::new(child.stdin.take().unwrap()));
+            let stdin = Arc::new(Mutex::new(child.stdin.take()));
             let stdout = child.stdout.take().unwrap();
             let pending = Arc::new(Mutex::new(Default::default()));
             let alive = Arc::new(AtomicBool::new(true));
@@ -1548,18 +1588,82 @@ mod tests {
             error == "The Codex runtime stopped."
                 || error == "The Codex runtime exited before completing the request."
                 || error == "Could not write to the Codex runtime."
+                || error == "The Codex runtime is not running."
         );
         assert!(!runtime.client.alive.load(Ordering::Acquire));
         assert!(runtime.client.pending.lock().unwrap().is_empty());
+        assert!(
+            runtime
+                .client
+                .child
+                .lock()
+                .unwrap()
+                .try_wait()
+                .unwrap()
+                .unwrap()
+                .success(),
+            "Cooperative child should exit on EOF without being killed"
+        );
+        runtime.client.shutdown(); // Repeated app-exit cleanup remains safe.
+    }
+
+    #[test]
+    fn shutdown_kills_and_reaps_a_child_that_ignores_eof() {
+        let runtime = TestRuntime::start_with_eof_behavior(true);
+        runtime.client.request("initialize", None).unwrap();
+        let started = std::time::Instant::now();
+        runtime.client.shutdown();
+        assert!(started.elapsed() >= super::SHUTDOWN_GRACE);
+        assert!(started.elapsed() < std::time::Duration::from_secs(5));
+        assert!(!runtime
+            .client
+            .child
+            .lock()
+            .unwrap()
+            .wait()
+            .unwrap()
+            .success());
+        assert!(runtime.client.stdin.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn shutdown_does_not_wait_for_an_owned_input_lock() {
+        let runtime = TestRuntime::start();
+        runtime.client.request("initialize", None).unwrap();
+        let input = runtime.client.stdin.lock().unwrap();
+        let started = std::time::Instant::now();
+        runtime.client.shutdown();
+        assert!(started.elapsed() < std::time::Duration::from_secs(5));
+        assert!(!runtime
+            .client
+            .child
+            .lock()
+            .unwrap()
+            .wait()
+            .unwrap()
+            .success());
+        drop(input);
+        runtime.client.shutdown();
+        assert!(runtime.client.stdin.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn manager_exit_takes_and_stops_its_owned_client() {
+        let runtime = TestRuntime::start();
+        runtime.client.request("initialize", None).unwrap();
+        let manager = super::CodexRuntimeManager::default();
+        manager.inner.lock().unwrap().client = Some(runtime.client.clone());
+        manager.stop_for_shutdown();
+        assert!(manager.inner.lock().unwrap().client.is_none());
         assert!(runtime
             .client
             .child
             .lock()
             .unwrap()
-            .try_wait()
+            .wait()
             .unwrap()
-            .is_some());
-        runtime.client.shutdown(); // Repeated app-exit cleanup remains safe.
+            .success());
+        manager.stop_for_shutdown();
     }
 
     #[test]
