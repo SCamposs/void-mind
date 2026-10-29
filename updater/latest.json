@@ -1,7 +1,7 @@
 {
   "version": "0.2.0-2",
   "notes": "See the GitHub release notes for v0.2.0-alpha.2.",
-  "pub_date": "2026-10-29T18:00:54.6606781Z",
+  "pub_date": "2026-10-29T17:58:25.9758207Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUkpGU1JMTXBQd2N2Si9nMmUwTzN0ZDJlZVVmd2FsdThvdkpxRTRkakNnOWY3VFR0NEJ2dFkwbjFERjYwdDJnaTZ2Y1gzcE4zMmZ5M1A3Vlo1Nk54VE5LeTg0VDlhZ1F3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjk2Njc5CWZpbGU6Vk9JRCBNaW5kXzAuMi4wLTJfeDY0LXNldHVwLmV4ZQpnQnpteXdiKzZhMnBsT3U0Y3QyZmJIRTlLUEM1c21wdUFrbngxWVNsRkJ1UExIa09FdWc5WjVha3k5S2pTZnNmQWwxRjA1NkVJNllxbVB0dUlaVVJBQT09Cg==",
@@ -10,6 +10,14 @@
     "linux-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUkpGU1JMTXBQd1V2QWhCMVZpNHhINFFUYk9HaTd5cEtjTmtta2t5WHphT3h6UjdPT1ZFbTFNcWJESnNOOTNhQVJ6dk1VdklFR3FubDAvTjM1RDhXaDBUV05TaFpoQVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjk2MjQ1CWZpbGU6Vk9JRCBNaW5kXzAuMi4wLTJfYW1kNjQuQXBwSW1hZ2UKVWswUkJJeVRQdGVzZHl2ZkRLeGxYU3VhYnRWM2xKOXFvWW5pZDQ1cWc1SkpneFZhVE56TlErYWRaZFh6ZW5OcTkzSmRWdWoxSzd1TENVNkQwVGJmRHc9PQo=",
       "url": "https://github.com/SCamposs/void-mind/releases/download/v0.2.0-alpha.2/VOID-Mind-Linux-x64.AppImage"
+    },
+    "linux-x86_64-appimage": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUkpGU1JMTXBQd1V2QWhCMVZpNHhINFFUYk9HaTd5cEtjTmtta2t5WHphT3h6UjdPT1ZFbTFNcWJESnNOOTNhQVJ6dk1VdklFR3FubDAvTjM1RDhXaDBUV05TaFpoQVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjk2MjQ1CWZpbGU6Vk9JRCBNaW5kXzAuMi4wLTJfYW1kNjQuQXBwSW1hZ2UKVWswUkJJeVRQdGVzZHl2ZkRLeGxYU3VhYnRWM2xKOXFvWW5pZDQ1cWc1SkpneFZhVE56TlErYWRaZFh6ZW5OcTkzSmRWdWoxSzd1TENVNkQwVGJmRHc9PQo=",
+      "url": "https://github.com/SCamposs/void-mind/releases/download/v0.2.0-alpha.2/VOID-Mind-Linux-x64.AppImage"
+    },
+    "linux-x86_64-deb": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUkpGU1JMTXBQd2ErNHpPWVYzV2VlRkdrK0hYOVdPSW1kSHQyUUV4dFJrRXp5TUEzMVZvVUFVaFhCanJ3SlNSUlNvems5aUNudjA1VE5TUjRHWUM1azltTU9ydll0TkFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjk2NDg5CWZpbGU6Vk9JRC1NaW5kLUxpbnV4LXg2NC5kZWIKVmo5M0JyQUhOZG5sSjF0azJLNDlqOVZkUEhTaFZ6QlVsT3laMnBhQmFRVTllTzY3YlNZSEVXZytaNjBBRUtFdUZMZFJZODU1YWJtRjV1Mk1EeWxFRHc9PQo=",
+      "url": "https://github.com/SCamposs/void-mind/releases/download/v0.2.0-alpha.2/VOID-Mind-Linux-x64.deb"
     }
   }
 }

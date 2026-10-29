@@ -8,4 +8,16 @@ Tauri updater and process plugins have explicit check/download-and-install/resta
 
 Release workflow generates signatures/checksums and the manifest after both platforms build, publishes curated `docs/releases/<tag>.md` notes, and updates the static feed on main. Keep all workspace package/lock versions aligned. Native versions use the existing numeric prerelease mapping (`0.2.0-alpha.2` maps to `0.2.0-2`); the manifest uses the native version.
 
+Explicit `linux-x86_64-deb` and `linux-x86_64-appimage` entries route updates to the installed package format. A generic AppImage entry remains for compatibility. DEB assets are signed with the same updater key and installation may request system package-manager authorization.
+
+## Alpha.2 evidence
+
+Application source `c9430de`, annotated tag `v0.2.0-alpha.2`, passed [desktop validation 40923161511](https://github.com/SCamposs/void-mind/actions/runs/40923161511) and [release 40923204739](https://github.com/SCamposs/void-mind/actions/runs/40923204739). Frontend validation includes 81 tests. Native tests report 38 passes on Windows and 37 on Linux, with two existing ignored cases on each platform. All three packages were generated; no installer was executed on the user's PC.
+
+The isolated Linux native acceptance receipt contains 13 passing checks, including changing automatic checks to manual-only mode through Settings and preserving that preference after an actual application session restart. This checks preference persistence, not an actual version upgrade or the update installer's relaunch path.
+
+Downloaded NSIS/DEB/AppImage files matched their three SHA-256 receipts. Package signatures, trusted comments and modified-payload rejection were independently checked against the public key committed in the app. All four manifest routes matched their signature files. The ten public asset digests matched the local receipts. The DEB signature and explicit format routes were finalized as release metadata without replacing tagged binaries or rewriting tags. Subsequent metadata-only edits do not alter the validated application source.
+
+Real Windows/Linux installation, upgrade, restart and operating-system prompts remain [manual validation #6](https://github.com/SCamposs/void-mind/issues/6). Publication does not close that issue or the existing provider acceptance follow-ups.
+
 Windows NSIS explicitly uses `currentUser`; updater `installMode` is `quiet`. This avoids the user-scope selection page and suits the existing per-user installation default. It does not bypass operating-system security prompts or provide Authenticode signing. The custom app dialog reports download progress; Windows installation may close the app until restart. Real installation/progress/restart remains [manual validation #6](https://github.com/SCamposs/void-mind/issues/6), not a result inferred from mocks.
