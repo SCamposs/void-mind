@@ -16,12 +16,18 @@ import { listen } from "@tauri-apps/api/event";
 import { refreshConnections } from "../lib/connections-bridge";
 import { connectionError } from "../lib/use-chatgpt-login";
 import { needsLegacyCodex } from "../lib/legacy-codex";
+import { scheduleUpdateChecks, useUpdateStore } from "../features/updates/updateStore";
+import { UpdateDialog } from "../features/updates/UpdatePanel";
 
 export function App() {
   const section = useMindStore((state) => state.section);
   const showBootIntro = useMindStore((state) => state.preferences.showBootIntro);
   const onboardingComplete = useMindStore((state) => state.preferences.onboardingComplete);
   const [bootVisible, setBootVisible] = useState(showBootIntro);
+  const automaticChecks = useUpdateStore((state) => state.automaticChecks);
+  const checkForUpdates = useUpdateStore((state) => state.checkForUpdates);
+  const welcomePending = useMindStore((state) => state.connections?.welcomePending ?? false);
+  useEffect(() => automaticChecks ? scheduleUpdateChecks(checkForUpdates) : undefined, [automaticChecks, checkForUpdates]);
 
   useEffect(() => {
     let active = true;
@@ -126,6 +132,7 @@ export function App() {
       {bootVisible && <BootIntro onSkip={finishBoot} />}
       {!bootVisible && !onboardingComplete && <OnboardingScreen />}
       {!bootVisible && <PlanWelcome />}
+      <UpdateDialog enabled={!bootVisible && onboardingComplete && !welcomePending} />
     </>
   );
 }

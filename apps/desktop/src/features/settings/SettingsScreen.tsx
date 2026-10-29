@@ -1,6 +1,7 @@
 import { ScrollSurface, Button, Input, Textarea, SwitchControl, Disclosure, NumberControl } from "../../components/Controls";
 import type { GenerationSettings, ProfileId } from "@void-mind/mind-core";
 import { activeSettings, useMindStore } from "../../stores/mind-store";
+import { UpdatePanel } from "../updates/UpdatePanel";
 
 const numericFields: Array<{
   key: keyof Pick<
@@ -35,6 +36,7 @@ export function SettingsScreen() {
         </div>
       </header>
       <div className="settings-column">
+        <UpdatePanel />
         <section className="settings-section">
           <div className="section-title">
             <h2>Response profile</h2>

@@ -17,6 +17,7 @@ import { useMindStore, selectedConversation, type AppSection } from "../stores/m
 import { VoidMark } from "./VoidMark";
 import { QuickSwitcher } from "./QuickSwitcher";
 import { WindowControls } from "./WindowControls";
+import { useUpdateStore } from "../features/updates/updateStore";
 
 const items: Array<{
   id: AppSection;
@@ -32,6 +33,7 @@ const items: Array<{
 ];
 
 export function AppShell({ children }: PropsWithChildren) {
+  const updateAvailable = useUpdateStore((state) => state.status === "available" || state.status === "readyToRestart");
   const section = useMindStore((state) => state.section);
   const open = useMindStore((state) => state.navigationOpen);
   const setSection = useMindStore((state) => state.setSection);
@@ -100,6 +102,7 @@ export function AppShell({ children }: PropsWithChildren) {
           <span>VOID <strong>MIND</strong></span>
         </Button>
         <div className="app-header-actions">
+          {updateAvailable && <Button className="text-button" onClick={() => useUpdateStore.getState().setDialogOpen(true)}>Update ready</Button>}
           <span className="privacy-note">
             {selectedProviderId === "openai-codex"
               ? account?.state === "connected" ? "Codex connected" : "Codex not connected"

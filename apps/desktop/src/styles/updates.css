@@ -1,0 +1,21 @@
+.update-settings { padding: 24px 0; border-bottom: 1px solid var(--mind-border); }
+.update-heading, .update-preference { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.update-heading h2 { font: 500 1.1rem var(--font-display); }
+.update-preference { margin-top: 24px; }
+.update-preference strong { display: block; font-weight: 500; font-size: .9rem; }
+.update-preference small { display: block; max-width: 65ch; margin-top: 6px; color: var(--mind-muted); line-height: 1.6; }
+.update-status { margin-top: 20px; font-size: .82rem; color: var(--mind-muted); }
+.update-last-checked { display: block; margin-top: 6px; color: var(--mind-muted); font-size: .75rem; }
+.update-dialog-backdrop { position: fixed; inset: 0; background: oklch(0 0 0 / .78); z-index: var(--z-dialog); transition: opacity 160ms; }
+.update-dialog { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(480px, calc(100vw - 40px)); max-height: calc(100dvh - 48px); overflow-y: auto; z-index: var(--z-dialog); padding: 28px; border: 1px solid var(--mind-border-strong); border-radius: var(--radius-md); background: var(--mind-black-soft); color: var(--mind-text); font-family: var(--font-body); outline: none; transition: opacity 160ms; }
+.update-dialog h2 { margin: 0 0 12px; font: 500 1.5rem var(--font-display); letter-spacing: -.02em; }
+.update-dialog > p { color: var(--mind-muted); font-size: .9rem; line-height: 1.65; }
+.update-dialog-status p { margin: 20px 0 10px; font-size: .85rem; }
+.update-notes { margin-top: 24px; font-size: .85rem; }
+.update-notes p { max-height: 200px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 12px; line-height: 1.65; color: var(--mind-muted); }
+.update-dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.update-dialog .update-error { margin-top: 20px; color: var(--mind-error); }
+.void-progress > div { height: 3px; background: var(--mind-border); overflow: hidden; }
+.void-progress > div > div { height: 100%; background: var(--mind-ice); transition: width var(--duration-fast); }
+.update-dialog[data-starting-style], .update-dialog[data-ending-style], .update-dialog-backdrop[data-starting-style], .update-dialog-backdrop[data-ending-style] { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .update-dialog, .update-dialog-backdrop { transition: none; } }

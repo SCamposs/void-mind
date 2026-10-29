@@ -7,6 +7,7 @@ import "@fontsource/barlow/latin-600.css";
 import { App } from "./app/App";
 import "./styles/tokens.css";
 import "./styles/globals.css";
+import "./styles/updates.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

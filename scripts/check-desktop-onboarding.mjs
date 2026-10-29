@@ -239,6 +239,12 @@ try {
   await until("workspace switcher navigation", () => evaluate("return !document.querySelector('.quick-switcher') && document.querySelector('.workspace-editor input')?.value === 'CI workspace';"));
   await keys("\uE009", ",");
   await heading("Settings");
+  const updateToggle = await element("css selector", "[role='switch'][aria-label='Check for updates automatically']");
+  assert.equal(await evaluate("return document.querySelector('[aria-label=\"Check for updates automatically\"]').getAttribute('aria-checked');"), "true");
+  await command("POST", `/session/${session}/element/${updateToggle}/click`, {});
+  await until("manual update mode", () => evaluate("return document.querySelector('[aria-label=\"Check for updates automatically\"]').getAttribute('aria-checked') === 'false';"));
+  await screenshot("08-update-settings");
+  checks.push("Settings exposes the branded hourly update preference and accepts manual-only mode without installing an update.");
   await click("Workspaces");
   checks.push("Ctrl+K focuses search, Escape restores focus, Tab/Enter opens a matching workspace and Ctrl+comma opens Settings.");
 
@@ -252,6 +258,11 @@ try {
   await closeSession();
   await startSession();
   await until("boot completion and persisted onboarding", () => evaluate("return !document.querySelector('.onboarding-screen') && !!document.querySelector('.app-root-surface:not([inert]) nav');"));
+  await click("Settings");
+  await heading("Settings");
+  assert.equal(await evaluate("return document.querySelector('[aria-label=\"Check for updates automatically\"]').getAttribute('aria-checked');"), "false");
+  await button("Check now");
+  checks.push("Manual-only update preference survives an actual native session restart and keeps Check now available.");
   await click("Workspaces");
   await until("persisted instructions", () => evaluate("return document.querySelector('.workspace-editor textarea[rows=\"8\"]')?.value === 'Synthetic native acceptance instructions.';"));
   checks.push("Workspace creation, rename, instructions and onboarding completion survive an actual app-session restart.");

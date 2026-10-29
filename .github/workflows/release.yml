@@ -24,6 +24,7 @@ jobs:
     runs-on: windows-latest
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
     steps:
       - name: Check out release tag
@@ -76,6 +77,7 @@ jobs:
           New-Item -ItemType Directory -Path "release-assets" -Force | Out-Null
           $installer = Join-Path "release-assets" "VOID-Mind-Windows-x64-setup.exe"
           Copy-Item -LiteralPath $source.FullName -Destination $installer
+          Copy-Item -LiteralPath "$($source.FullName).sig" -Destination "$installer.sig"
           $hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  VOID-Mind-Windows-x64-setup.exe" |
             Set-Content -LiteralPath "$installer.sha256" -Encoding ascii
@@ -92,6 +94,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
     steps:
       - name: Check out release tag
@@ -152,6 +155,7 @@ jobs:
           mkdir -p release-assets
           cp "$deb_source" release-assets/VOID-Mind-Linux-x64.deb
           cp "$appimage_source" release-assets/VOID-Mind-Linux-x64.AppImage
+          cp "$appimage_source.sig" release-assets/VOID-Mind-Linux-x64.AppImage.sig
           chmod +x release-assets/VOID-Mind-Linux-x64.AppImage
           cd release-assets
           sha256sum VOID-Mind-Linux-x64.deb > VOID-Mind-Linux-x64.deb.sha256
@@ -172,6 +176,12 @@ jobs:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
     steps:
+      - name: Check out release scripts and notes
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          path: source
+
       - name: Download packaged applications
         uses: actions/download-artifact@v8
         with:
@@ -179,10 +189,37 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Create signed updater manifest
+        shell: pwsh
+        run: |
+          $nativeVersion = (Get-Content -Raw source/apps/desktop/src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          ./source/.github/scripts/create-updater-manifest.ps1 -Tag $env:RELEASE_TAG -Version $nativeVersion -Repository "${{ github.repository }}" -AssetDirectory release-assets
+
       - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          generate_release_notes: true
+          name: VOID Mind ${{ env.RELEASE_TAG }}
+          body_path: source/docs/releases/${{ env.RELEASE_TAG }}.md
+          fail_on_unmatched_files: true
           prerelease: ${{ contains(env.RELEASE_TAG, 'alpha') || contains(env.RELEASE_TAG, 'beta') || contains(env.RELEASE_TAG, 'rc') }}
           files: release-assets/*
+
+      - name: Check out updater feed
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: updater-feed
+
+      - name: Publish updater feed
+        shell: bash
+        run: |
+          mkdir -p updater-feed/updater
+          cp release-assets/latest.json updater-feed/updater/latest.json
+          cd updater-feed
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add updater/latest.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore(release): update updater feed to $RELEASE_TAG"
+          git push origin HEAD:main

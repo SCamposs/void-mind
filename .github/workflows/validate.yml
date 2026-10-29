@@ -23,6 +23,8 @@ concurrency:
 jobs:
   desktop:
     name: Validate ${{ matrix.platform }}
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 45
     strategy:

@@ -6,7 +6,14 @@ VOID Mind is a standalone desktop product for conversation, reasoning, writing, 
 
 ## Current state
 
-[Download v0.2.0-alpha.1 for Windows or Linux](https://github.com/SCamposs/void-mind/releases/tag/v0.2.0-alpha.1). This is a prerelease with explicitly tracked manual-validation follow-ups; see the release notes and [phase report](docs/ALPHA_1_REPORT.md).
+[Download v0.2.0-alpha.2 for Windows or Linux](https://github.com/SCamposs/void-mind/releases/tag/v0.2.0-alpha.2). This is a prerelease with explicitly tracked manual-validation follow-ups; see the release notes and [alpha.1 phase report](docs/ALPHA_1_REPORT.md).
+
+Mind checks its own signed GitHub update feed at startup and every hour. Settings
+can switch to manual checks. Downloads and installation require explicit approval
+in a VOID dialog that explains restart and shows download progress. Windows uses
+quiet per-user installation. The alpha.1 build needs a manual installer upgrade
+once to acquire this update mechanism. Native upgrade acceptance is tracked in
+[issue #6](https://github.com/SCamposs/void-mind/issues/6).
 
 Implemented:
 

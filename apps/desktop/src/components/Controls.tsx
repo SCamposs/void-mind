@@ -7,11 +7,15 @@ import { ScrollArea } from "@base-ui/react/scroll-area";
 import { NumberField } from "@base-ui/react/number-field";
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
+import { Progress as BaseProgress } from "@base-ui/react/progress";
 import { Check, ChevronDown, Minus, Plus } from "lucide-react";
 import type { ComponentPropsWithRef, PropsWithChildren, ReactNode, Ref } from "react";
 
 /** Source-owned VOID controls: behavior comes from Base UI, appearance from tokens. */
 export function Button(props: ComponentPropsWithRef<"button">) { return <BaseButton {...props} />; }
+export function Progress({ value, max = 100, "aria-label": label }: { value: number | null; max?: number; "aria-label": string }) {
+  return <BaseProgress.Root value={value === null ? null : max > 0 ? value / max * 100 : 0} aria-label={label} className="void-progress"><BaseProgress.Track><BaseProgress.Indicator /></BaseProgress.Track></BaseProgress.Root>;
+}
 export function Input(props: ComponentPropsWithRef<"input">) { return <BaseInput {...props} />; }
 export function NumberControl({ value, onValueChange, ...props }: { value: number; onValueChange(value: number): void; min?: number; max?: number; step?: number }) {
   return <NumberField.Root className="void-number" value={value} onValueChange={(next) => { if (next !== null) onValueChange(next); }} {...props}><NumberField.Group><NumberField.Input /><NumberField.Decrement aria-label="Decrease"><Minus size={12} /></NumberField.Decrement><NumberField.Increment aria-label="Increase"><Plus size={12} /></NumberField.Increment></NumberField.Group></NumberField.Root>;

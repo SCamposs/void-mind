@@ -1,7 +1,7 @@
 {
   "name": "@void-mind/persistence",
   "private": true,
-  "version": "0.2.0-alpha.1",
+  "version": "0.2.0-alpha.2",
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": { "@void-mind/mind-core": "*" }
