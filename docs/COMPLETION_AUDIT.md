@@ -4,7 +4,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 
 | Criterion | Evidence level | Current evidence / remaining gate |
 | --- | --- | --- |
-| 1 | Native primary connection observed | Home/onboarding prioritize ChatGPT; direct account/catalog/inference observed. First-run acceptance remains pending. |
+| 1 | Native primary connection and first-run presentation observed | Fresh Linux onboarding prioritizes ChatGPT and opens Intelligence without installed Codex; direct account/catalog/inference were separately observed on Windows. This combines separate receipts, not one clean-machine login walkthrough. |
 | 2 | Source + tests | Rust codex.rs and providers/codex.ts implement official app-server. |
 | 3 | Source reviewed | No browser token/cookie collection in integration. |
 | 4 | Source + discovery tests; platform checks partial | PATH/native npm-shim discovery exists. Tests reject missing files, directories and unrelated names. Unix permission-change/launch test passed on Ubuntu in run 40801211555. Windows ACL/unsupported-executable behavior and bounded version probing remain open. |
@@ -27,7 +27,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 21 | Verified regression | Lab untouched in this checkpoint; Ruff and all six Python tests pass. |
 | 22 | Partial | Home implemented and seen natively; latest acceptance pending. |
 | 23 | Native first-run presentation observed | Fresh Linux production app exposes primary ChatGPT action and API/local/Explore alternatives. Local option routing is source-reviewed; real provider setup remains covered by other receipts. |
-| 24 | Native Explore first passed | Isolated credential-free Linux app opened Home and Intelligence, retained onboarding completion after app restart and prevented button sending. Home form now also guards keyboard submission; its additional native Enter regression awaits the next run. |
+| 24 | Native Explore first passed | Isolated credential-free Linux app opened Home and Intelligence, retained onboarding completion after app restart and prevented both button and Enter sending with a nonempty prompt in run 40802054782. No conversation was persisted. |
 | 25 | Native CRUD and persistence observed | Windows creation/description/instructions/preference and restart passed; Linux rename/instructions/restart/Keep/Delete passed in run 40801211555. Managed-copy cleanup/retry and conversation preservation have component tests; actual file cleanup through workspace deletion remains unverified. |
 | 26 | Native workspace conversation observed | Workspace-created draft inherited its preference and delivered a real response; draft promotion/source isolation and deletion preservation tests pass. |
 | 27 | Native direct instruction effect observed | Real workspace response followed the configured language, sentence and prefix instruction. Assembly for other providers remains covered structurally. |
@@ -44,9 +44,9 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 38 | Partial native keyboard walkthrough | Ctrl+N draft, End/Enter model selection, Escape Context and focus return observed; Ctrl+K observed earlier. Compact navigation/history drawers isolate background accessibility; history Escape works. Final full walkthrough remains pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Verified checks | All 63 JS tests, TypeScript/lint passed at the last frontend checkpoint. Current Windows native suite: 25 passed; one isolated child fixture is skipped as a standalone test and invoked by its two lifecycle drivers. Cargo check and formatting pass. |
-| 42 | Windows and Linux production builds passed | CI run 40797193538 passed frontend checks, native tests and production Tauri executable builds on Windows and Ubuntu 22.04. Local current-source NSIS build passed. New Linux distributable bundles and alpha.1 publication remain unverified. |
-| 43 | Verified checks | Six existing Python tests pass; Ruff passes. |
+| 41 | Verified checks | Current-source Linux run 40802054782 passed all 64 JS tests/19 files, TypeScript/lint, 26 Rust tests and graphical acceptance. Current native code also passed all 26 Windows Rust tests locally; its standalone child fixture is intentionally skipped and invoked by lifecycle drivers. Final Windows CI completion remains pending. |
+| 42 | Windows and Linux production builds passed | Local production/NSIS build from e47b4f5 passed; Linux production Tauri build passed in run 40802054782. Final Windows CI completion, new Linux distributable bundles and alpha.1 publication remain pending. |
+| 43 | Verified regression | All six existing Python tests and Ruff passed again after the current environment changes; lab source remains untouched. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
 | 46 | Partial native QA | Legacy inference/continuation/Stop passed. Direct fresh login, catalog, inference, incremental streaming, Stop, continuation, restart recovery and a new workspace/source request after restart observed. Refresh/logout remain pending. |
