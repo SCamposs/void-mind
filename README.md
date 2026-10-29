@@ -6,6 +6,8 @@ VOID Mind is a standalone desktop product for conversation, reasoning, writing, 
 
 ## Current state
 
+[Download v0.2.0-alpha.1 for Windows or Linux](https://github.com/SCamposs/void-mind/releases/tag/v0.2.0-alpha.1). This is a prerelease with explicitly tracked manual-validation follow-ups; see the release notes and [phase report](docs/ALPHA_1_REPORT.md).
+
 Implemented:
 
 - standalone Tauri v2, React, and TypeScript desktop application

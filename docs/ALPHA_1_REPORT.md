@@ -1,6 +1,6 @@
 # VOID Mind alpha.1 — environment phase handoff
 
-Prepared on 2026-10-29. This report records implementation and evidence, including remaining manual validation. Release publication is recorded separately in VALIDATION.md once the actual tag and assets are verified.
+Published on 2026-10-29: [v0.2.0-alpha.1](https://github.com/SCamposs/void-mind/releases/tag/v0.2.0-alpha.1). The environment phase is handed off under the maintainer's amended acceptance plan: remaining interactive checks are tracked as manual validation, not claimed as passed. Publication and all six asset digests were verified; detailed evidence is in VALIDATION.md.
 
 ## Product and architecture
 
@@ -51,4 +51,6 @@ Agents, MCP, generic shell access, automatic memory, advanced retrieval, voice, 
 
 Key implementation checkpoints include `9dd1cf2` (draft isolation), `a9c176f` (chrome/branding), `a9911dc` (workspace entry points), `2d1ec9d` (context bounds), `b122f76` (restricted Windows runtime compatibility), `38db469` (direct connections/shared controls), `80da169` (renewal/primitives), `8c9b225` (deferred history creation), `ab21693` (workspace quick navigation), `644ff9e` (cooperative shutdown), `b4d0173` (native Knowledge acceptance), `e6ba3b5` (discovery fallback), `df0921f` (focus acceptance), `efb5620` (global model controls) and `aaa6d8d` (HTTP auth regression). `git log v0.2.0-alpha.0..v0.2.0-alpha.1` identifies the complete release history once tagged; intermediate evidence and documentation commits remain in that history.
 
-Release preparation after `aaa6d8d` changes documentation only. Generated binaries, logs, private QA and credentials are excluded from Git. Diff checks pass before publishing. The sibling VOID remains untouched and retains its pre-existing one-commit ahead/behind divergence. Publication and final repository synchronization are checked after the release workflow completes.
+Release preparation after `aaa6d8d` changes documentation only. Tag `v0.2.0-alpha.1` points to `1fefd1a`; [release run 40901467460](https://github.com/SCamposs/void-mind/actions/runs/40901467460) passed Windows, Linux and publication. The three downloaded workflow packages and their checksum files match the six public release asset sizes/SHA-256 digests. None was executed locally for this check.
+
+Generated binaries, logs, private QA and credentials are excluded from Git. Diff checks pass before publishing. The sibling VOID remains untouched and retains its pre-existing one-commit ahead/behind divergence. Main receives only the documentation receipt after the immutable release tag; final synchronization is verified when that receipt is pushed. No desktop control is needed to consume this report or download the release.

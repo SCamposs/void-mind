@@ -254,3 +254,17 @@ Run [40892819822](https://github.com/SCamposs/void-mind/actions/runs/40892819822
 The user directed that no further tests control the user's PC and that checks needing interaction be saved as manual-validation issues. Issues [#3](https://github.com/SCamposs/void-mind/issues/3), [#4](https://github.com/SCamposs/void-mind/issues/4) and [#5](https://github.com/SCamposs/void-mind/issues/5) now track final Windows installer/UI, real ChatGPT renewal/revocation, and legacy/runtime/Linux-installation follow-ups. Existing local/API-key issues #1/#2 remain open. This is an explicit change in the acceptance plan, not evidence those tests passed. No desktop interaction, account request or inference was performed in this release-preparation checkpoint.
 
 README, connection guidance, the completion audit, release notes and ALPHA_1_REPORT.md were reconciled with these boundaries. Changes after the validated application source are documentation only. Tagging/publication still requires a successful release workflow and verification of its actual assets; this entry alone does not claim publication.
+
+## Published alpha.1 verification
+
+[Release run 40901467460](https://github.com/SCamposs/void-mind/actions/runs/40901467460) completed successfully on Linux, Windows and Publish GitHub Release. Tag `v0.2.0-alpha.1` resolves to `1fefd1a9cf43d440b4aab885c853aea353e9815a`. The [release](https://github.com/SCamposs/void-mind/releases/tag/v0.2.0-alpha.1) was published on 2026-10-29 at 12:49:16 America/Sao_Paulo, with `draft:false`, `prerelease:true` and exactly six uploaded assets.
+
+The two workflow artifacts were downloaded to ignored private QA storage without executing their binaries. SHA-256 of each package matches its checksum file. SHA-256 and byte size of all six local files, including checksum files, also match the GitHub public release asset metadata. This verifies correspondence of the published assets to the completed workflow downloads; it is not final installed-app acceptance or a publisher-signature assertion.
+
+| Package | Bytes | SHA-256 |
+| --- | ---: | --- |
+| VOID-Mind-Windows-x64-setup.exe | 3585572 | `5db806372bec5b9dbab327320e7b39f8c1ee6eb5217e125e88ec4151191a74af` |
+| VOID-Mind-Linux-x64.deb | 6798168 | `ce2708d43005ab6940b419c8028438a803280365c9ebaeacc275b6fe599c23e3` |
+| VOID-Mind-Linux-x64.AppImage | 84601336 | `64ff1f2ec6ea81e322b1f001931aa037b7d21f6bd00c7a7a6efaa803127af0cb` |
+
+The release body was replaced with reviewed alpha.1 notes and absolute source-document links, including manual-validation issues #1–#5. Remaining manual checks are deferred by maintainer direction and remain unverified; publication does not close those issues. No application was opened, no inference/account request was made and no control of the user's desktop was used in this publication checkpoint. The follow-up commit records documentation only; the release tag is not moved.

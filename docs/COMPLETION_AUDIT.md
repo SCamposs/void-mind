@@ -12,6 +12,10 @@ This audit separates implemented behavior, observed results and outstanding manu
 
 No interactive test on the user's PC was performed after that instruction. Other platform/security limits below remain explicitly bounded; they are not broadened by moving manual work to issues.
 
+## Publication outcome
+
+[v0.2.0-alpha.1](https://github.com/SCamposs/void-mind/releases/tag/v0.2.0-alpha.1) is published as a prerelease from tag commit `1fefd1a`. Release run 40901467460 passed Windows/Linux validation, packaging and publication. All six public asset sizes/digests match the downloaded workflow files; the three package hashes also match their `.sha256` files. The implemented environment phase is handed off with the manual checks above explicitly outstanding under the amended acceptance plan, rather than presenting them as successful native QA. The subsequent VOID appearance refactor remains a separate phase.
+
 | Criterion | Evidence level | Current evidence / remaining gate |
 | --- | --- | --- |
 | 1 | Native primary connection and first-run presentation observed | Fresh Linux onboarding prioritizes ChatGPT and opens Intelligence without installed Codex; direct account/catalog/inference were separately observed on Windows. This combines separate receipts, not one clean-machine login walkthrough. |
