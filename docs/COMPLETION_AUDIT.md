@@ -7,7 +7,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 1 | Native primary connection observed | Home/onboarding prioritize ChatGPT; direct account/catalog/inference observed. First-run acceptance remains pending. |
 | 2 | Source + tests | Rust codex.rs and providers/codex.ts implement official app-server. |
 | 3 | Source reviewed | No browser token/cookie collection in integration. |
-| 4 | Source + discovery tests; platform checks partial | PATH/native npm-shim discovery exists. New tests reject missing files, directories and unrelated names. Unix candidates now require an execute bit, with a permission-change/launch test pending Linux CI. Windows ACL/unsupported-executable behavior and bounded version probing remain open. |
+| 4 | Source + discovery tests; platform checks partial | PATH/native npm-shim discovery exists. Tests reject missing files, directories and unrelated names. Unix permission-change/launch test passed on Ubuntu in run 40801211555. Windows ACL/unsupported-executable behavior and bounded version probing remain open. |
 | 5 | Process tests pass; manager integration partial | Real isolated stdio child tests cover launch/request, unexpected exit failing an in-flight request, rejection after exit, shutdown releasing an unanswered request, child reaping and repeated cleanup. Actual Codex discovery/start/reuse and Tauri-exit integration remain separate gates. |
 | 6 | Source + tests | Central IDs/pending map/reader; direct tests cover out-of-order replies, duplicate/unknown IDs, sanitized errors and failure-drain behavior. |
 | 7 | Native observed | Direct connected account and live catalog recovered after preview restart. |
@@ -26,9 +26,9 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 20 | Partial | Six llama provider tests pass; real GGUF inference not rerun. |
 | 21 | Verified regression | Lab untouched in this checkpoint; Ruff and all six Python tests pass. |
 | 22 | Partial | Home implemented and seen natively; latest acceptance pending. |
-| 23 | Source reviewed | Continue with ChatGPT is primary; Use a local model opens Intelligence with explicit local preference. Native first-run test pending. |
-| 24 | Source reviewed | Explore first completes onboarding without a provider and opens Home; native first-run test pending. |
-| 25 | Native creation/editing/persistence observed; deletion tested | Native creation/name/description/instructions/preference, navigation and app-restart retention passed. Product-surface partial-cleanup/retry tests preserve conversations. Native deletion remains open. |
+| 23 | Native first-run presentation observed | Fresh Linux production app exposes primary ChatGPT action and API/local/Explore alternatives. Local option routing is source-reviewed; real provider setup remains covered by other receipts. |
+| 24 | Native Explore first passed | Isolated credential-free Linux app opened Home and Intelligence, retained onboarding completion after app restart and prevented button sending. Home form now also guards keyboard submission; its additional native Enter regression awaits the next run. |
+| 25 | Native CRUD and persistence observed | Windows creation/description/instructions/preference and restart passed; Linux rename/instructions/restart/Keep/Delete passed in run 40801211555. Managed-copy cleanup/retry and conversation preservation have component tests; actual file cleanup through workspace deletion remains unverified. |
 | 26 | Native workspace conversation observed | Workspace-created draft inherited its preference and delivered a real response; draft promotion/source isolation and deletion preservation tests pass. |
 | 27 | Native direct instruction effect observed | Real workspace response followed the configured language, sentence and prefix instruction. Assembly for other providers remains covered structurally. |
 | 28 | Native workspace preference and conversation override observed | A different workspace preference was saved; selecting GPT-6-Luna in its saved synthetic conversation changed the header to conversation resolution. Ctrl+N retained workspace GPT-5.6-Luna and cleared source selection. Changed-model inference, override restart persistence and reasoning walkthrough remain pending. |

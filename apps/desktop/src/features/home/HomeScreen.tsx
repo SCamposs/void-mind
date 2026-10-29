@@ -16,7 +16,7 @@ export function HomeScreen() {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const content = prompt.trim();
-    if (!content) return;
+    if (!content || !activeModel) return;
     const conversationId = state.createConversation(state.selectedWorkspaceId ?? undefined);
     state.appendMessage("user", content);
     state.queueGeneration(conversationId);

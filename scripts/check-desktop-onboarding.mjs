@@ -119,8 +119,11 @@ try {
   await command("POST", `/session/${session}/element/${prompt}/value`, { text: "Synthetic prompt; must not be submitted." });
   const start = await element("css selector", "button[aria-label='Start conversation']");
   assert.equal(await command("GET", `/session/${session}/element/${start}/enabled`), false);
+  await command("POST", `/session/${session}/element/${prompt}/value`, { text: "\uE007" });
+  await heading("Make room for thought.");
+  assert.equal(await evaluate("return JSON.parse(localStorage.getItem('void-mind:state')).state.conversations.length;"), 0);
   await screenshot("02-explore-home");
-  checks.push("Explore first opens Home; generation is unavailable without a configured provider.");
+  checks.push("Explore first opens Home; a nonempty prompt cannot be sent by button or Enter without a provider, and no conversation is persisted.");
 
   await click("Intelligence");
   await heading("Intelligence");
