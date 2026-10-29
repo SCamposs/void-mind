@@ -43,6 +43,7 @@ driver.on("error", error => { driverError = error; });
 driver.stderr.on("data", chunk => { driverLog = (driverLog + chunk.toString()).slice(-8000); });
 let session;
 const checks = [];
+let importNumber = 0;
 const runFile = promisify(execFile);
 const source = join(profile, "acceptance-notes.md");
 const sourceContent = "# Acceptance notes\nSynthetic, explicitly selected workspace context.\n";
@@ -127,6 +128,7 @@ async function importedItem() {
   return evaluate("return JSON.parse(localStorage.getItem('void-mind:state')).state.knowledge.find(item => item.sourceFilename === 'acceptance-notes.md') ?? null;");
 }
 async function importSource() {
+  importNumber++;
   await click("Import source");
   // This runner has a dedicated Xvfb display and no user desktop. Operate only
   // the visible GTK file chooser opened by the product's real import action.
@@ -137,10 +139,17 @@ async function importSource() {
     return windows[0];
   });
   assert.match(dialog, /^\d+$/);
+  // GTK may map the chooser before its location entry is ready for key events.
+  await delay(500);
   await runFile("xdotool", ["windowfocus", "--sync", dialog], { timeout: 5000 });
+  await runFile("scrot", [join(output, `picker-${importNumber}-open.png`)], { timeout: 5000 });
   await runFile("xdotool", ["key", "--clearmodifiers", "ctrl+l"], { timeout: 5000 });
+  await delay(250);
   await runFile("xdotool", ["type", "--clearmodifiers", "--", source], { timeout: 5000 });
+  await runFile("scrot", [join(output, `picker-${importNumber}-path.png`)], { timeout: 5000 });
   await runFile("xdotool", ["key", "--clearmodifiers", "Return"], { timeout: 5000 });
+  await delay(500);
+  await runFile("scrot", [join(output, `picker-${importNumber}-submitted.png`)], { timeout: 5000 });
   const item = await until("imported knowledge metadata", importedItem);
   assert.ok(item.managedPath.startsWith(profileEnv.XDG_DATA_HOME + "/"));
   assert.notEqual(item.managedPath, source);
