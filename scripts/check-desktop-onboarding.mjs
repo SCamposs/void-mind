@@ -1,14 +1,15 @@
 /* global fetch, AbortSignal */
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import console from "node:console";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, URL } from "node:url";
+import { promisify } from "node:util";
 
 // Real Linux desktop acceptance on a disposable CI runner. No user profile,
 // credentials, authentication, imported personal files or inference requests.
@@ -42,6 +43,10 @@ driver.on("error", error => { driverError = error; });
 driver.stderr.on("data", chunk => { driverLog = (driverLog + chunk.toString()).slice(-8000); });
 let session;
 const checks = [];
+const runFile = promisify(execFile);
+const source = join(profile, "acceptance-notes.md");
+const sourceContent = "# Acceptance notes\nSynthetic, explicitly selected workspace context.\n";
+await writeFile(source, sourceContent);
 
 async function command(method, path, body) {
   const response = await fetch(`http://127.0.0.1:4444${path}`, {
@@ -118,6 +123,40 @@ async function setField(label, text) {
   await command("POST", `/session/${session}/element/${id}/clear`, {});
   await command("POST", `/session/${session}/element/${id}/value`, { text });
 }
+async function importedItem() {
+  return evaluate("return JSON.parse(localStorage.getItem('void-mind:state')).state.knowledge.find(item => item.sourceFilename === 'acceptance-notes.md') ?? null;");
+}
+async function importSource() {
+  await click("Import source");
+  // This runner has a dedicated Xvfb display and no user desktop. Operate only
+  // the visible GTK file chooser opened by the product's real import action.
+  const dialog = await until("native GTK file chooser", async () => {
+    const { stdout } = await runFile("xdotool", ["search", "--onlyvisible", "--name", "^(Open|Open File|Select a file)$"], { timeout: 5000 });
+    const windows = stdout.trim().split(/\s+/).filter(Boolean);
+    assert.equal(windows.length, 1, "Select exactly one native file chooser");
+    return windows[0];
+  });
+  assert.match(dialog, /^\d+$/);
+  await runFile("xdotool", ["windowfocus", "--sync", dialog], { timeout: 5000 });
+  await runFile("xdotool", ["key", "--clearmodifiers", "ctrl+l"], { timeout: 5000 });
+  await runFile("xdotool", ["type", "--clearmodifiers", "--", source], { timeout: 5000 });
+  await runFile("xdotool", ["key", "--clearmodifiers", "Return"], { timeout: 5000 });
+  const item = await until("imported knowledge metadata", importedItem);
+  assert.ok(item.managedPath.startsWith(profileEnv.XDG_DATA_HOME + "/"));
+  assert.notEqual(item.managedPath, source);
+  assert.equal(item.type, "markdown");
+  assert.equal(item.status, "ready");
+  assert.equal(await readFile(item.managedPath, "utf8"), sourceContent);
+  assert.equal(await readFile(source, "utf8"), sourceContent);
+  return item;
+}
+async function assertCopyRemoved(item) {
+  await until("managed copy removed", async () => {
+    try { await access(item.managedPath); return false; }
+    catch (error) { if (error.code === "ENOENT") return true; throw error; }
+  });
+  assert.equal(await readFile(source, "utf8"), sourceContent);
+}
 
 try {
   await until("tauri-driver readiness", async () => (await command("GET", "/status"))?.ready !== false);
@@ -179,12 +218,37 @@ try {
   await heading("Settings");
   await click("Workspaces");
   checks.push("Ctrl+K focuses search, Escape restores focus, Tab/Enter opens a matching workspace and Ctrl+comma opens Settings.");
+
+  await click("Knowledge");
+  await heading("Knowledge");
+  const imported = await importSource();
+  await click("View full source");
+  await until("full source preview", () => evaluate("return document.querySelector('.knowledge-preview pre')?.textContent === arguments[0];", [sourceContent]));
+  await screenshot("05-knowledge-imported");
+  checks.push("A Markdown source selected through the native file chooser creates a real managed copy, metadata and full preview without changing the original.");
   await closeSession();
   await startSession();
   await until("boot completion and persisted onboarding", () => evaluate("return !document.querySelector('.onboarding-screen') && !!document.querySelector('.app-root-surface:not([inert]) nav');"));
   await click("Workspaces");
   await until("persisted instructions", () => evaluate("return document.querySelector('.workspace-editor textarea[rows=\"8\"]')?.value === 'Synthetic native acceptance instructions.';"));
   checks.push("Workspace creation, rename, instructions and onboarding completion survive an actual app-session restart.");
+
+  await click("Knowledge");
+  await heading("Knowledge");
+  assert.equal((await importedItem()).id, imported.id);
+  assert.equal(await readFile(imported.managedPath, "utf8"), sourceContent);
+  const remove = () => element("css selector", "button[aria-label='Remove acceptance-notes']");
+  await command("POST", `/session/${session}/element/${await remove()}/click`, {});
+  await click("No");
+  assert.equal((await importedItem()).id, imported.id);
+  assert.equal(await readFile(imported.managedPath, "utf8"), sourceContent);
+  await command("POST", `/session/${session}/element/${await remove()}/click`, {});
+  await click("Yes");
+  await until("knowledge catalog removal", async () => !await importedItem());
+  await assertCopyRemoved(imported);
+  checks.push("Knowledge survives app restart; cancelling removal keeps the copy, while confirmed removal deletes only the managed copy and metadata.");
+  const workspaceSource = await importSource();
+  await click("Workspaces");
 
   await click("New conversation");
   await heading("New conversation");
@@ -207,6 +271,9 @@ try {
   await until("workspace removal", () => evaluate("return document.querySelector('.workspace-list')?.textContent.includes('No workspaces yet.');"));
   await screenshot("04-workspace-deleted");
   checks.push("Synthetic workspace deletion requires confirmation; Keep preserves it and Delete removes it.");
+  await assertCopyRemoved(workspaceSource);
+  assert.equal(await importedItem(), null);
+  checks.push("Deleting the synthetic workspace cleans its managed Knowledge copy and metadata while preserving the selected original Markdown file.");
   await writeFile(join(output, "receipt.json"), JSON.stringify({ platform: process.platform, applicationKind, reducedMotion, commit: process.env.GITHUB_SHA, checks }, null, 2));
   checks.forEach(check => console.log(`PASS: ${check}`));
 } catch (error) {
