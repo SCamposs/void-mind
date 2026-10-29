@@ -39,13 +39,13 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 33 | Tests pass | Resolution precedence and unavailable-provider behavior covered. |
 | 34 | Partial | Black/ice tokens, canonical mark, Urbanist/Barlow implemented; final visual acceptance pending. |
 | 35 | Partial | Source preserves black surfaces; final all-surface native QA pending. |
-| 36 | Source reviewed | Short boot displacement and reduced-motion rules; motion inspection pending. |
+| 36 | Linux reduced motion verified | Run 40808447482 confirms native GTK preference reaches WebKit and reduced CSS in extracted AppImage. Final visual motion acceptance remains pending. |
 | 37 | Partial | Proportional Barlow reading column implemented; long-form native QA pending. |
 | 38 | Partial native keyboard walkthrough | Ctrl+N draft, End/Enter model selection, Escape Context and focus return observed; Ctrl+K observed earlier. Compact navigation/history drawers isolate background accessibility; history Escape works. Final full walkthrough remains pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Cross-platform checkpoint passed; latest native changes pending CI | Run 40802054782 passed 64 JS tests/19 files and 26 Rust tests on each platform. The newer probe change passes 30 Windows Rust tests locally, plus the separately selected installed-runtime check; its cross-platform run remains pending. |
-| 42 | Installable previews built; latest native changes pending packaging | Manual validation run 40803248008 built NSIS, Debian and AppImage artifacts without publishing. The downloaded Debian package reports version 0.2.0-1/amd64 and contains the expected executable. Latest native-code packaging and actual packaged Linux runtime checks remain pending. |
+| 41 | Cross-platform checkpoint passed | Run 40808447482 passed Windows/Linux validation and builds at ab21693, including bounded probes. Subsequent favicon/cursor source changes have focused local validation; full CI remains pending for those changes. |
+| 42 | Preview packaging and extracted Linux runtime passed | Run 40808447482 built NSIS, Debian and AppImage without publishing. Extracted Debian executable and AppImage AppRun passed native acceptance. This does not prove OS package-manager installation or FUSE mounting; final packages must include subsequent fixes. |
 | 43 | Verified regression | All six existing Python tests and Ruff passed again after the current environment changes; lab source remains untouched. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |

@@ -960,6 +960,11 @@ summary {
   box-shadow: 0 0 8px color-mix(in oklch, var(--mind-ice) 38%, transparent);
 }
 
+.send-button:disabled,
+.home-composer button[type="submit"]:disabled {
+  cursor: default;
+}
+
 .send-button.stop-button {
   width: auto;
   gap: 7px;

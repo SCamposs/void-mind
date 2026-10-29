@@ -1,5 +1,8 @@
 //! Direct OpenAI connections. All network credentials stay on this side of IPC.
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use base64::{
+    engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+    Engine,
+};
 use futures_util::StreamExt;
 use jsonwebtoken::{decode, decode_header, jwk::JwkSet, Algorithm, DecodingKey, Validation};
 use reqwest::{Client, Response};
@@ -488,10 +491,11 @@ fn callback_response(valid: bool) -> String {
     } else {
         "Return to VOID Mind and start sign-in again. You can close this tab."
     };
+    let favicon = STANDARD.encode(include_bytes!("../icons/32x32.png"));
     let body = format!(
-        r#"<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VOID Mind</title><style>html{{color-scheme:dark;background:#000;color:#edf0f5;font-family:system-ui,sans-serif}}body{{min-height:100vh;margin:0;display:grid;place-items:center}}main{{max-width:480px;padding:40px;text-align:center}}svg{{width:54px;height:54px;fill:#f5f8fc}}h1{{font-size:28px;font-weight:500;letter-spacing:-.03em;margin:28px 0 14px}}p{{color:#a7adb6;line-height:1.65}}.brand{{font-size:11px;letter-spacing:.24em;margin-top:18px}}</style><main><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M 10 5 L 50 95 L 90 5 L 42 45 L 70 25 L 50 70 L 21.1 5 Z"/></svg><div class="brand">VOID MIND</div><h1>{title}</h1><p>{detail}</p></main></html>"#
+        r#"<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VOID Mind</title><link rel="icon" type="image/png" href="data:image/png;base64,{favicon}"><style>html{{color-scheme:dark;background:#000;color:#edf0f5;font-family:system-ui,sans-serif}}body{{min-height:100vh;margin:0;display:grid;place-items:center}}main{{max-width:480px;padding:40px;text-align:center}}svg{{width:54px;height:54px;fill:#f5f8fc}}h1{{font-size:28px;font-weight:500;letter-spacing:-.03em;margin:28px 0 14px}}p{{color:#a7adb6;line-height:1.65}}.brand{{font-size:11px;letter-spacing:.24em;margin-top:18px}}</style><main><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M 10 5 L 50 95 L 90 5 L 42 45 L 70 25 L 50 70 L 21.1 5 Z"/></svg><div class="brand">VOID MIND</div><h1>{title}</h1><p>{detail}</p></main></html>"#
     );
-    format!("HTTP/1.1 {}\r\nContent-Type: text/html; charset=utf-8\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}", if valid { "200 OK" } else { "400 Bad Request" }, body.len())
+    format!("HTTP/1.1 {}\r\nContent-Type: text/html; charset=utf-8\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'none'; img-src data:; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}", if valid { "200 OK" } else { "400 Bad Request" }, body.len())
 }
 fn authorize_url(attempt: &LoginAttempt, host: &str) -> Result<String, String> {
     let mut url = reqwest::Url::parse(&format!("{AUTH}/api/accounts/authorize"))
@@ -1174,6 +1178,20 @@ mod tests {
         assert!(accepted.contains("finish connecting your account"));
         assert!(!accepted.contains("account connected"));
         assert!(accepted.contains("Referrer-Policy: no-referrer"));
+        assert!(accepted.contains("img-src data:"));
+        let favicon = accepted
+            .split("href=\"data:image/png;base64,")
+            .nth(1)
+            .unwrap()
+            .split('"')
+            .next()
+            .unwrap();
+        assert_eq!(
+            STANDARD.decode(favicon).unwrap(),
+            include_bytes!("../icons/32x32.png")
+        );
+        let (headers, body) = accepted.split_once("\r\n\r\n").unwrap();
+        assert!(headers.contains(&format!("Content-Length: {}", body.len())));
         assert!(callback_response(false).starts_with("HTTP/1.1 400 Bad Request"));
     }
     fn account() -> Account {
