@@ -23,7 +23,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 17 | Source + tests | Product conversation ID and remote binding are separate; resume test passes. |
 | 18 | Partial | Neutral cwd and minimal read profile tested structurally; OS sandbox validation pending. |
 | 19 | Source reviewed | General-purpose product surfaces; Codex in Intelligence/provider details. |
-| 20 | Partial | Six llama provider tests pass; real GGUF inference not rerun. |
+| 20 | Automated regression retained; real inference explicitly deferred | Six llama provider tests pass. On 2026-10-29 the user deferred real GGUF/runtime validation and requested tracking it in [issue #1](https://github.com/SCamposs/void-mind/issues/1), outside current alpha.1 validation. No new model download or inference claim. |
 | 21 | Verified regression | Lab untouched in this checkpoint; Ruff and all six Python tests pass. |
 | 22 | Partial | Home implemented and seen natively; latest acceptance pending. |
 | 23 | Native first-run presentation observed | Fresh Linux production app exposes primary ChatGPT action and API/local/Explore alternatives. Local option routing is source-reviewed; real provider setup remains covered by other receipts. |
@@ -44,8 +44,8 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 38 | Partial native keyboard walkthrough | Ctrl+N draft, End/Enter model selection, Escape Context and focus return observed; Ctrl+K observed earlier. Compact navigation/history drawers isolate background accessibility; history Escape works. Final full walkthrough remains pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Cross-platform checkpoint passed | Run 40808447482 passed Windows/Linux validation and builds at ab21693, including bounded probes. Subsequent favicon/cursor source changes have focused local validation; full CI remains pending for those changes. |
-| 42 | Preview packaging and extracted Linux runtime passed | Run 40808447482 built NSIS, Debian and AppImage without publishing. Extracted Debian executable and AppImage AppRun passed native acceptance. This does not prove OS package-manager installation or FUSE mounting; final packages must include subsequent fixes. |
+| 41 | Cross-platform checkpoint passed | Run 40811967821 at b0539f3 passed frontend validation and 33 Rust tests on each platform, including callback/favicon and cooperative lifecycle changes. Subsequent compact acceptance additions await their own CI execution. |
+| 42 | Current preview packaging and extracted Linux runtime passed | Run 40811967821 built NSIS, Debian and AppImage without publishing. Extracted Debian executable and AppImage AppRun passed native Knowledge import/restart/deletion and workspace cleanup, with reduced motion checked in AppImage. This does not prove OS package-manager installation or FUSE mounting. |
 | 43 | Verified regression | All six existing Python tests and Ruff passed again after the current environment changes; lab source remains untouched. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
