@@ -131,7 +131,8 @@ jobs:
           (cd "$appimage_root" && "$appimage_path" --appimage-extract > /dev/null)
           test -x "$appimage_root/squashfs-root/AppRun"
           VOID_MIND_E2E_APP="$appimage_root/squashfs-root/AppRun" \
-            VOID_MIND_E2E_KIND=appimage VOID_MIND_E2E_OUTPUT=private/qa/appimage-e2e \
+            VOID_MIND_E2E_KIND=appimage VOID_MIND_E2E_REDUCED_MOTION=1 \
+            VOID_MIND_E2E_OUTPUT=private/qa/appimage-e2e \
             dbus-run-session -- xvfb-run --auto-servernum node scripts/check-desktop-onboarding.mjs
 
       - name: Preserve packaged Linux acceptance evidence

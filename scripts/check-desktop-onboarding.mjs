@@ -26,6 +26,12 @@ for (const kind of ["DATA", "CONFIG", "CACHE"]) {
   profileEnv[`XDG_${kind}_HOME`] = join(profile, kind.toLowerCase());
   await mkdir(profileEnv[`XDG_${kind}_HOME`], { recursive: true });
 }
+const reducedMotion = process.env.VOID_MIND_E2E_REDUCED_MOTION === "1";
+if (reducedMotion) {
+  const gtkConfig = join(profileEnv.XDG_CONFIG_HOME, "gtk-3.0");
+  await mkdir(gtkConfig, { recursive: true });
+  await writeFile(join(gtkConfig, "settings.ini"), "[Settings]\ngtk-enable-animations=false\n");
+}
 const driver = spawn("tauri-driver", [], {
   env: { ...process.env, ...profileEnv },
   stdio: ["ignore", "ignore", "pipe"]
@@ -76,6 +82,14 @@ async function click(name) {
 async function evaluate(script, args = []) {
   return command("POST", `/session/${session}/execute/sync`, { script, args });
 }
+async function keys(...values) {
+  await command("POST", `/session/${session}/actions`, {
+    actions: [{ type: "key", id: "keyboard", actions: [
+      ...values.map(value => ({ type: "keyDown", value })),
+      ...values.toReversed().map(value => ({ type: "keyUp", value }))
+    ] }]
+  });
+}
 async function heading(text) {
   await until(`heading ${text}`, () => evaluate("return [...document.querySelectorAll('h1')].some(e => e.textContent.trim() === arguments[0]);", [text]));
 }
@@ -112,6 +126,11 @@ try {
   await button("Continue with ChatGPT");
   await button("Use a local model");
   await button("Use API key");
+  if (reducedMotion) {
+    assert.equal(await evaluate("return matchMedia('(prefers-reduced-motion: reduce)').matches;"), true);
+    assert.equal(await evaluate("return getComputedStyle(document.querySelector('.onboarding-actions button')).animationDuration;"), "0.001s");
+    checks.push("Native GTK reduced-motion preference reaches WebKit and the application's reduced-motion stylesheet.");
+  }
   await screenshot("01-first-run");
   checks.push("Fresh native first run exposes ChatGPT and explicit alternatives without credentials.");
 
@@ -141,6 +160,25 @@ try {
   await click("Save changes");
   await until("saved workspace", () => evaluate("return [...document.querySelectorAll('.workspace-list strong')].some(e => e.textContent === 'CI workspace');"));
   await screenshot("03-workspace");
+  await evaluate("window.__voidMindFocusBeforeSwitcher = document.activeElement; return true;");
+  await keys("\uE009", "k");
+  await until("quick switcher input focus", () => evaluate("return document.activeElement?.getAttribute('aria-label') === 'Search destinations, workspaces, and conversations';"));
+  await keys("\uE00C");
+  await until("switcher closes and restores focus", () => evaluate("return !document.querySelector('.quick-switcher') && document.activeElement === window.__voidMindFocusBeforeSwitcher;"));
+  await keys("\uE009", "k");
+  const search = await element("css selector", "input[aria-label='Search destinations, workspaces, and conversations']");
+  await command("POST", `/session/${session}/element/${search}/value`, { text: "CI workspace" });
+  await button("CI workspace");
+  for (let tab = 0; tab < 6 && !await evaluate("return document.activeElement?.textContent === 'CI workspace';"); tab++) {
+    await keys("\uE004");
+  }
+  assert.equal(await evaluate("return document.activeElement?.textContent;"), "CI workspace");
+  await keys("\uE007");
+  await until("workspace switcher navigation", () => evaluate("return !document.querySelector('.quick-switcher') && document.querySelector('.workspace-editor input')?.value === 'CI workspace';"));
+  await keys("\uE009", ",");
+  await heading("Settings");
+  await click("Workspaces");
+  checks.push("Ctrl+K focuses search, Escape restores focus, Tab/Enter opens a matching workspace and Ctrl+comma opens Settings.");
   await closeSession();
   await startSession();
   await until("boot completion and persisted onboarding", () => evaluate("return !document.querySelector('.onboarding-screen') && !!document.querySelector('.app-root-surface:not([inert]) nav');"));
@@ -149,6 +187,8 @@ try {
   checks.push("Workspace creation, rename, instructions and onboarding completion survive an actual app-session restart.");
 
   await click("New conversation");
+  await heading("New conversation");
+  await keys("\uE009", "n");
   await heading("New conversation");
   assert.equal(await evaluate("return JSON.parse(localStorage.getItem('void-mind:state')).state.conversations.length;"), 0);
   const send = await element("css selector", "button[aria-label='Send message']");
@@ -167,7 +207,7 @@ try {
   await until("workspace removal", () => evaluate("return document.querySelector('.workspace-list')?.textContent.includes('No workspaces yet.');"));
   await screenshot("04-workspace-deleted");
   checks.push("Synthetic workspace deletion requires confirmation; Keep preserves it and Delete removes it.");
-  await writeFile(join(output, "receipt.json"), JSON.stringify({ platform: process.platform, applicationKind, commit: process.env.GITHUB_SHA, checks }, null, 2));
+  await writeFile(join(output, "receipt.json"), JSON.stringify({ platform: process.platform, applicationKind, reducedMotion, commit: process.env.GITHUB_SHA, checks }, null, 2));
   checks.forEach(check => console.log(`PASS: ${check}`));
 } catch (error) {
   if (session) await screenshot("failure").catch(() => undefined);

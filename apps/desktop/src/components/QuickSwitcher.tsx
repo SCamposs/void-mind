@@ -18,6 +18,8 @@ export function QuickSwitcher() {
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const conversations = useMindStore((state) => state.conversations);
+  const workspaces = useMindStore((state) => state.workspaces);
+  const selectWorkspace = useMindStore((state) => state.selectWorkspace);
   const createConversation = useMindStore((state) => state.createConversation);
   const selectedWorkspaceId = useMindStore((state) => state.selectedWorkspaceId);
   const selectConversation = useMindStore((state) => state.selectConversation);
@@ -51,15 +53,21 @@ export function QuickSwitcher() {
     () => conversations.filter((item) => item.title.toLocaleLowerCase().includes(normalized)).slice(0, 6),
     [conversations, normalized]
   );
+  const matchingWorkspaces = useMemo(
+    () => workspaces.filter((item) => item.name.toLocaleLowerCase().includes(normalized)).slice(0, 6),
+    [workspaces, normalized]
+  );
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}><Dialog.Portal>
       <Dialog.Backdrop className="switcher-backdrop" />
       <Dialog.Popup className="quick-switcher" initialFocus={input} aria-label="Quick switcher">
-        <label><Search size={16} /><Input aria-label="Search destinations and conversations" ref={input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Go to…" /><Button type="button" onClick={() => setOpen(false)} aria-label="Close"><X size={15} /></Button></label>
+        <label><Search size={16} /><Input aria-label="Search destinations, workspaces, and conversations" ref={input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Go to…" /><Button type="button" onClick={() => setOpen(false)} aria-label="Close"><X size={15} /></Button></label>
         <div className="switcher-results">
           <span>Navigate</span>
           {matchingDestinations.map((item) => <Button type="button" key={item.id} onClick={() => { setSection(item.id); setOpen(false); }}>{item.label}</Button>)}
+          {matchingWorkspaces.length > 0 && <span>Workspaces</span>}
+          {matchingWorkspaces.map((item) => <Button type="button" key={item.id} onClick={() => { selectWorkspace(item.id); setSection("workspaces"); setOpen(false); }}>{item.name}</Button>)}
           {matchingConversations.length > 0 && <span>Conversations</span>}
           {matchingConversations.map((item) => <Button type="button" key={item.id} onClick={() => { selectConversation(item.id); setOpen(false); }}>{item.title}</Button>)}
         </div>

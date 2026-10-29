@@ -31,6 +31,7 @@ VOID Mind must not resemble:
 - a cyberpunk, hacker, CRT, or green-terminal interface
 - a dense three-column inspector
 - an agent telemetry console
+- generic AI sparkle/star branding
 - a giant-orb product centered on Orbit
 
 ## Design Principles
@@ -62,7 +63,7 @@ The implemented target is WCAG 2.2 AA for text contrast, keyboard access, semant
 
 ## Product Boundaries
 
-Local model-generated titles are under feasibility assessment, not implemented. See [LOCAL_TITLE_EVALUATION.md](LOCAL_TITLE_EVALUATION.md) for the user's requested isolated experiment boundary and evidence required before training. Current titles still use deterministic extraction without an additional inference request.
+Titles use deterministic extraction without an additional inference request. The isolated Qwen3-0.6B experiment is closed with a NO-GO for the evaluated configurations; no training, new benchmark or title integration belongs in this goal. A future optional connected-provider title request would require opt-in, clear quota/cost disclosure, minimal context, background execution, manual-rename protection and deterministic fallback. See [LOCAL_TITLE_EVALUATION.md](LOCAL_TITLE_EVALUATION.md).
 
 Knowledge is explicit material supplied by the user. Memory is information deliberately saved or learned from usage. They remain separate domains.
 
@@ -77,3 +78,9 @@ All app-authored buttons, text fields, multiline fields, numbers, checkboxes, sw
 ## Conversation creation and titles
 
 New conversation opens a transient draft. It enters history, recents, workspace counts and persistence only when the first message is sent. There is at most one unsent draft, and historical empty placeholders are removed during migration without discarding archived content. Titles currently derive locally from the first user message; no separate model request is made for naming. The user can rename a saved conversation. Automatic model-generated naming is not implemented.
+
+## Visual transfer to VOID
+
+The established direction is stable enough to plan the subsequent visual refactor of VOID. Carry over the black/glacial-white tokens, Urbanist/Barlow hierarchy, shared Base UI wrappers, restrained focus/scrollbar states, integrated titlebar language and canonical mark. Adapt those foundations to VOID's existing surfaces; Mind's conversation/provider domain is not a template for VOID's product structure. Avoid scattering local control styles or coupling VOID to Mind state. [DESIGN.md](DESIGN.md) and the source controls/tokens remain the concrete references.
+
+Implementation belongs after the alpha.1 completion gates in a separately scoped phase. The sibling VOID repository remains read-only throughout the current Mind goal. Technical checks and screenshots establish implementation evidence; they do not replace human visual acceptance.
