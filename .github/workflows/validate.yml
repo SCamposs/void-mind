@@ -7,6 +7,11 @@ on:
   pull_request:
     paths-ignore: ['**/*.md', 'lab/**', 'pyproject.toml', 'uv.lock', '.gitignore']
   workflow_dispatch:
+    inputs:
+      package:
+        description: Build downloadable installers without publishing a release
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -37,6 +42,7 @@ jobs:
             libdbus-1-dev \
             librsvg2-dev \
             libwebkit2gtk-4.1-dev \
+            patchelf \
             webkit2gtk-driver \
             xvfb
 
@@ -87,3 +93,24 @@ jobs:
           name: Linux-native-onboarding
           path: private/qa/onboarding-e2e/
           if-no-files-found: ignore
+
+      - name: Bundle Windows installer
+        if: github.event_name == 'workflow_dispatch' && inputs.package && runner.os == 'Windows'
+        working-directory: apps/desktop
+        run: npm run tauri -- bundle --bundles nsis
+
+      - name: Bundle Linux packages
+        if: github.event_name == 'workflow_dispatch' && inputs.package && runner.os == 'Linux'
+        working-directory: apps/desktop
+        run: npm run tauri -- bundle --bundles deb,appimage
+
+      - name: Preserve installable validation packages
+        if: github.event_name == 'workflow_dispatch' && inputs.package
+        uses: actions/upload-artifact@v7
+        with:
+          name: Desktop-packages-${{ runner.os }}
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+            apps/desktop/src-tauri/target/release/bundle/deb/*.deb
+            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
