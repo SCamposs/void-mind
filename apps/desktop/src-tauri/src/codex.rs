@@ -1357,7 +1357,11 @@ mod tests {
             let request: serde_json::Value = serde_json::from_str(&line.unwrap()).unwrap();
             match request["method"].as_str().unwrap() {
                 "crash" => std::process::exit(7),
-                "hold" => continue,
+                "hold" => {
+                    // A notification proves receipt without answering the request.
+                    println!("{}", json!({"method": "account/updated", "params": {}}));
+                    io::stdout().flush().unwrap();
+                }
                 _ => {
                     println!(
                         "{}",
@@ -1375,6 +1379,7 @@ mod tests {
     struct TestRuntime {
         client: std::sync::Arc<super::CodexClient>,
         reader: Option<std::thread::JoinHandle<()>>,
+        hold_received: std::sync::Arc<std::sync::atomic::AtomicBool>,
     }
 
     fn version_fixture(mode: &str) -> std::process::Command {
@@ -1509,12 +1514,18 @@ mod tests {
             let stdout = child.stdout.take().unwrap();
             let pending = Arc::new(Mutex::new(Default::default()));
             let alive = Arc::new(AtomicBool::new(true));
+            let hold_received = Arc::new(AtomicBool::new(false));
+            let received = hold_received.clone();
             let reader = super::spawn_reader(
                 stdout,
                 stdin.clone(),
                 pending.clone(),
                 alive.clone(),
-                |_| {},
+                move |event| {
+                    if event["type"] == "accountUpdated" {
+                        received.store(true, std::sync::atomic::Ordering::Release);
+                    }
+                },
             );
             let client = Arc::new(super::CodexClient {
                 child: Mutex::new(child),
@@ -1529,6 +1540,7 @@ mod tests {
             Self {
                 client,
                 reader: Some(reader),
+                hold_received,
             }
         }
     }
@@ -1578,10 +1590,15 @@ mod tests {
         let client = runtime.client.clone();
         let request = thread::spawn(move || client.request("hold", None));
         let deadline = Instant::now() + Duration::from_secs(2);
-        while runtime.client.pending.lock().unwrap().is_empty() {
-            assert!(Instant::now() < deadline, "Request was not registered");
+        while !runtime.hold_received.load(Ordering::Acquire) {
+            assert!(
+                Instant::now() < deadline,
+                "Child did not receive the request"
+            );
             thread::sleep(Duration::from_millis(5));
         }
+        // Synchronize with the completed write before testing cooperative EOF.
+        drop(runtime.client.stdin.lock().unwrap());
         runtime.client.shutdown();
         let error = request.join().unwrap().unwrap_err();
         assert!(

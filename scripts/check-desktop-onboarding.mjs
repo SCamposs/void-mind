@@ -149,6 +149,14 @@ async function importSource() {
   await runFile("scrot", [join(output, `picker-${importNumber}-path.png`)], { timeout: 5000 });
   await runFile("xdotool", ["key", "--clearmodifiers", "Return"], { timeout: 5000 });
   await delay(500);
+  await runFile("scrot", [join(output, `picker-${importNumber}-located.png`)], { timeout: 5000 });
+  // GTK's location entry resolves the path first, enabling its Open action.
+  // Confirm that native action rather than treating the first Enter as import.
+  if (!await importedItem()) {
+    await runFile("xdotool", ["windowfocus", "--sync", dialog], { timeout: 5000 });
+    await runFile("xdotool", ["key", "--clearmodifiers", "alt+o"], { timeout: 5000 });
+    await delay(500);
+  }
   await runFile("scrot", [join(output, `picker-${importNumber}-submitted.png`)], { timeout: 5000 });
   const item = await until("imported knowledge metadata", importedItem);
   assert.ok(item.managedPath.startsWith(profileEnv.XDG_DATA_HOME + "/"));
