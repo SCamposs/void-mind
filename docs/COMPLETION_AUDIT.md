@@ -25,7 +25,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 19 | Source reviewed | General-purpose product surfaces; Codex in Intelligence/provider details. |
 | 20 | Automated regression retained; real inference explicitly deferred | Six llama provider tests pass. On 2026-10-29 the user deferred real GGUF/runtime validation and requested tracking it in [issue #1](https://github.com/SCamposs/void-mind/issues/1), outside current alpha.1 validation. No new model download or inference claim. |
 | 21 | Verified regression | Lab untouched in this checkpoint; Ruff and all six Python tests pass. |
-| 22 | Partial | Home implemented and seen natively; latest acceptance pending. |
+| 22 | Native Home inspected at full and compact sizes | Windows Home inspected; Linux run 40812737849 resized the actual app to 760-by-600 and verified/captured Home within its viewport. Packaged compact checks await completion. |
 | 23 | Native first-run presentation observed | Fresh Linux production app exposes primary ChatGPT action and API/local/Explore alternatives. Local option routing is source-reviewed; real provider setup remains covered by other receipts. |
 | 24 | Native Explore first passed | Isolated credential-free Linux app opened Home and Intelligence, retained onboarding completion after app restart and prevented both button and Enter sending with a nonempty prompt in run 40802054782. No conversation was persisted. |
 | 25 | Native CRUD, persistence and copy cleanup observed | Windows creation/description/instructions/preference and restart passed. Linux run 40811967821 verified restart, Keep/Delete confirmation and actual managed-file cleanup through workspace deletion while retaining the source original. Partial deletion/retry and conversation preservation also have component coverage. |
@@ -40,8 +40,8 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 34 | Partial | Black/ice tokens, canonical mark, Urbanist/Barlow implemented; final visual acceptance pending. |
 | 35 | Partial | Source preserves black surfaces; final all-surface native QA pending. |
 | 36 | Linux reduced motion verified | Run 40808447482 confirms native GTK preference reaches WebKit and reduced CSS in extracted AppImage. Final visual motion acceptance remains pending. |
-| 37 | Partial | Proportional Barlow reading column implemented; long-form native QA pending. |
-| 38 | Partial native keyboard walkthrough | Ctrl+N draft, End/Enter model selection, Escape Context and focus return observed; Ctrl+K observed earlier. Compact navigation/history drawers isolate background accessibility; history Escape works. Final full walkthrough remains pending. |
+| 37 | Real long-form conversation inspected | In the installed Windows app, a direct ChatGPT response to a general study-techniques prompt completed with paragraphs, headings, a list and a three-column table. Native scrolling and hierarchy/wrapping were visually inspected at 1280-by-800. This does not claim compact long-form acceptance or user aesthetic approval. |
+| 38 | Native desktop and compact navigation checks passed | Existing Ctrl+N/model/Context/history receipts are retained. Linux run 40812737849 verified Ctrl+K/search/workspace/Settings navigation plus real compact drawer Tab containment, Escape closing and trigger focus restoration. Packaged compact execution remains pending. |
 | 39 | Partial | Narrow commands, URL allowlist, explicit import, loopback local endpoint; runtime isolation unresolved. |
 | 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
 | 41 | Cross-platform checkpoint passed | Run 40811967821 at b0539f3 passed frontend validation and 33 Rust tests on each platform, including callback/favicon and cooperative lifecycle changes. Subsequent compact acceptance additions await their own CI execution. |
