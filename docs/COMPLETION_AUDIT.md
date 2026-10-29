@@ -1,6 +1,16 @@
 # Environment phase completion audit
 
-This is an open audit, not a completion declaration. The user subsequently approved direct official ChatGPT plan authentication plus an OpenAI API key; see CONNECTIONS.md for the requirement amendment. Numbering follows section 77 of VOID_MIND_ENVIRONMENT_GOAL.md. Source review and fixture tests do not substitute for native behavior or visual acceptance.
+This audit separates implemented behavior, observed results and outstanding manual validation. The user approved direct official ChatGPT plan authentication plus an OpenAI API key; see CONNECTIONS.md for that requirement amendment. On 2026-10-29 the user instructed that remaining checks needing desktop interaction be tracked as manual-validation issues, without further interaction on the user's PC. Those checks are release follow-ups, not passed results. Numbering follows section 77 of VOID_MIND_ENVIRONMENT_GOAL.md. Source review and fixture tests do not substitute for native behavior or visual acceptance.
+
+## Manual-validation follow-ups
+
+- [#1 — local llama.cpp/GGUF inference](https://github.com/SCamposs/void-mind/issues/1).
+- [#2 — real API-key connection/inference](https://github.com/SCamposs/void-mind/issues/2).
+- [#3 — final Windows installation/UI, model controls, compact reading and uninstall](https://github.com/SCamposs/void-mind/issues/3): outstanding parts of criteria 14, 28, 34–38 and installer acceptance.
+- [#4 — real ChatGPT renewal/revocation](https://github.com/SCamposs/void-mind/issues/4): remaining direct-connection evidence under criterion 46.
+- [#5 — legacy Codex lifecycle/authentication and normal Linux installation](https://github.com/SCamposs/void-mind/issues/5): outstanding live parts of criteria 5, 8–10 and platform-installation checks.
+
+No interactive test on the user's PC was performed after that instruction. Other platform/security limits below remain explicitly bounded; they are not broadened by moving manual work to issues.
 
 | Criterion | Evidence level | Current evidence / remaining gate |
 | --- | --- | --- |
@@ -43,9 +53,9 @@ This is an open audit, not a completion declaration. The user subsequently appro
 | 37 | Real long-form conversation inspected | In the installed Windows app, a direct ChatGPT response to a general study-techniques prompt completed with paragraphs, headings, a list and a three-column table. Native scrolling and hierarchy/wrapping were visually inspected at 1280-by-800. This does not claim compact long-form acceptance or user aesthetic approval. |
 | 38 | Native desktop and compact navigation checks passed | Existing Ctrl+N/model/Context/history receipts are retained. Linux run 40812737849 verified Ctrl+K/search/workspace/Settings navigation plus real compact drawer Tab containment, Escape closing and trigger focus restoration. The extracted Debian and AppImage scenarios passed the same compact execution checks. |
 | 39 | Narrow source boundaries plus Windows read-denial evidence | Commands remain scoped; browser URL allowlists, explicit imports and loopback-only local endpoints are source/test covered. The matching named runtime profile denied a synthetic read outside its neutral workspace on Windows. Linux OS sandbox and network-denial behavior remain outside this native receipt. |
-| 40 | Partial | Core docs updated; remaining implementation/validation claims must follow audit. |
-| 41 | Cross-platform efb5620 passed; aaa6d8d validation underway | Run 40889616050 passed Windows/Linux validation with 67 JavaScript tests/20 files and 35 Windows/34 Linux Rust tests. Three subsequent HTTP auth tests pass locally (38 Windows native tests total); cross-platform validation of that refactor is tracked by run 40892819822. |
-| 42 | efb5620 packaging and extracted Linux runtime passed | Run 40889616050 built NSIS, Debian and AppImage without publishing. Downloaded receipts confirm eleven extracted Debian checks and twelve AppImage AppRun checks, including Knowledge import/restart/deletion, workspace cleanup, compact navigation and reduced motion (AppImage). This does not prove OS package-manager installation or FUSE mounting. New aaa6d8d packages and the updated Windows installed-source check remain pending. |
+| 40 | Current docs reconciled | Product/design/architecture/provider/context docs, README, release notes and alpha handoff distinguish implementation, observed evidence, deferred work and manual-validation issues. Publication status is verified separately. |
+| 41 | Cross-platform aaa6d8d passed | Run 40892819822 passed Windows/Linux validation with 67 JavaScript tests/20 files and 38 Windows/37 Linux Rust tests, including the HTTP renewal/revocation regressions. Two native standalone entrypoints per platform are intentionally ignored. Subsequent release-preparation edits affect documentation only. |
+| 42 | aaa6d8d packaging and extracted Linux runtime passed | Run 40892819822 built NSIS, Debian and AppImage. Downloaded receipts confirm eleven extracted Debian checks and twelve AppImage AppRun checks, including Knowledge import/restart/deletion, workspace cleanup, compact navigation and reduced motion (AppImage). This does not prove OS package-manager installation or FUSE mounting. Final Windows installed-source validation is tracked in issue #3; ordinary Linux installation is tracked in issue #5. |
 | 43 | Verified regression | All six existing Python tests and Ruff passed again after the current environment changes; lab source remains untouched. |
 | 44 | Verified check | Diff checks pass before incremental commits. |
 | 45 | Source boundary | All current checkpoint edits scoped to void-mind; sibling still has its pre-existing divergence. |
@@ -57,7 +67,7 @@ This is an open audit, not a completion declaration. The user subsequently appro
 - Installer scope updated by the user after visual inspection: VOID header/sidebar/icons, native page bodies and controls. Full dark NSIS styling is no longer a requirement.
 - Updated setup welcome, same-version maintenance, destination, progress and installation-complete pages were inspected with the VOID icon/header/sidebar and native bodies. User clicked Finish and the installed application opened. Uninstaller inspection was interrupted by physical Escape; no uninstall validation is claimed. App maximize/close actions were verified earlier.
 - The e6ba3b5 Windows candidate was subsequently installed with explicit action-time user authorization. Add/Reinstall was used at the exact existing executable directory; setup completed and Run VOID Mind opened the app with its connected account and prior workspace/source/history. A later Intelligence model-binding bug was then found and fixed in source; that frontend correction is not claimed as installed by this receipt.
-- Publish alpha.1 only after required gates; prepared commits and local setup are not a published release.
+- Remaining interactive gates now have manual-validation issues by the user's subsequent direction. Prepared commits/local setups are not a published release; publication still requires successful release packaging and inspection of the actual release assets.
 - Transfer design to sibling VOID only in a subsequent authorized phase. Current phase keeps it read-only.
 
 ## Connection/control amendment validation
@@ -65,6 +75,8 @@ This is an open audit, not a completion declaration. The user subsequently appro
 Direct `openai-chatgpt` and `openai-api` providers are implemented separately from the legacy Codex provider. Primary login no longer requires Codex installation. The older Codex runtime is retained for existing bindings; it is not a prerequisite for direct login. Fresh browser consent, direct catalog, real inference, visible incremental streaming, Stop and contextual continuation passed natively. Post-inference restart recovered the connected account, catalog and full conversation, including stopped content. A subsequent workspace/source request succeeded without another login. Real API-key inference and credential refresh/revocation remain unverified.
 
 On 2026-10-29 the user explicitly deferred real API-key validation to [issue #2](https://github.com/SCamposs/void-mind/issues/2), outside alpha.1 acceptance. The provider stays implemented and its automated tests remain required. No API-key entry or billable API call is authorized for the current phase. That decision does not defer credential refresh/revocation checks for the primary ChatGPT connection.
+
+The later instruction to track remaining interactive tests as manual validation also moves real renewal/revocation into issue #4. The earlier API-key-only decision above is retained chronologically and does not itself supply evidence for ChatGPT renewal.
 
 The user subsequently reported not remembering whether the earlier Disconnect/reconnect flow displayed a remote-revocation warning. Local disconnect/reconnection is user-reported; remote revocation remains unconfirmed. Loopback HTTP regression at aaa6d8d verifies form encoding, token rotation/error preservation and revocation retry decisions with fictitious credentials, not real OpenAI acceptance.
 

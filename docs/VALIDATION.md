@@ -246,3 +246,11 @@ On 2026-10-29 the existing installed e6ba3b5 application was reopened without re
 Downloaded receipts from run 40889616050 confirm eleven passed Debian checks and twelve passed AppImage checks at efb5620, including actual compact-window navigation and reduced motion in AppImage. All six Python laboratory tests and Ruff passed again; lab source remains untouched. The sibling VOID remains clean with its pre-existing one-commit ahead/behind divergence.
 
 The user does not remember whether the earlier manual Disconnect/reconnect displayed a remote-revocation warning. That historical flow is not promoted into remote-revocation proof. Run 40892819822 tracks packaging/validation at aaa6d8d; it was confirmed pending behind the earlier push-triggered validation handle 40892815706, not restarted.
+
+## Alpha.1 release handoff and manual-validation amendment
+
+Run [40892819822](https://github.com/SCamposs/void-mind/actions/runs/40892819822) subsequently completed successfully on both platforms at aaa6d8d. Completed logs confirm 38 Windows and 37 Linux native tests (two ignored standalone entrypoints each), plus 20 passed JavaScript test files. Downloaded packaged receipts confirm eleven Debian checks and twelve AppImage checks. Windows NSIS, Debian and AppImage packages were downloaded privately without executing or installing them.
+
+The user directed that no further tests control the user's PC and that checks needing interaction be saved as manual-validation issues. Issues [#3](https://github.com/SCamposs/void-mind/issues/3), [#4](https://github.com/SCamposs/void-mind/issues/4) and [#5](https://github.com/SCamposs/void-mind/issues/5) now track final Windows installer/UI, real ChatGPT renewal/revocation, and legacy/runtime/Linux-installation follow-ups. Existing local/API-key issues #1/#2 remain open. This is an explicit change in the acceptance plan, not evidence those tests passed. No desktop interaction, account request or inference was performed in this release-preparation checkpoint.
+
+README, connection guidance, the completion audit, release notes and ALPHA_1_REPORT.md were reconciled with these boundaries. Changes after the validated application source are documentation only. Tagging/publication still requires a successful release workflow and verification of its actual assets; this entry alone does not claim publication.

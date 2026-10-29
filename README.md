@@ -22,7 +22,7 @@ Implemented:
 - General, Creative, Analytical, Concise, and Custom response profiles
 - preserved Python model lab under `lab/`
 
-Direct ChatGPT and API-key credentials are held by the native system credential store, outside product JSON persistence and frontend state. The legacy Codex runtime owns its own authentication; its threads use a neutral app-data workspace with `approvalPolicy: never`, a restrictive permission profile and no product tool workflow. Effective legacy filesystem denial still requires validation. VOID Local connects only to a llama.cpp-compatible server on `127.0.0.1`, `localhost`, or `::1`.
+Direct ChatGPT and API-key credentials are held by the native system credential store, outside product JSON persistence and frontend state. The legacy Codex runtime owns its own authentication; its threads use a neutral app-data workspace with `approvalPolicy: never`, a restrictive permission profile and no product tool workflow. A Windows runtime/profile test denied reading outside that neutral directory; this is not exhaustive cross-platform sandbox verification. VOID Local connects only to a llama.cpp-compatible server on `127.0.0.1`, `localhost`, or `::1`.
 
 ## Repository
 
@@ -42,7 +42,7 @@ Requirements:
 - Node.js 22+
 - npm 11+
 - Rust and the platform prerequisites required by Tauri v2
-- Codex CLI on `PATH` or in its supported per-user install location for ChatGPT integration
+- Optional Codex CLI on `PATH` or in its supported per-user install location, only for legacy Codex-bound conversations; direct ChatGPT login does not require it
 
 ```powershell
 npm install
@@ -100,7 +100,7 @@ Installing the optional dependencies does not start training. Generated model fi
 ## Current limitations
 
 - no model or llama.cpp runtime is bundled or downloaded
-- real inference requires a user-selected GGUF and llama-server installation
+- local inference requires a user-selected GGUF and llama-server installation; direct ChatGPT uses the connected account instead
 - Knowledge uses explicit full-text context selection; indexing and RAG are not implemented
 - arbitrary tools, autonomous actions, memory, voice, training UI, and Mind Mini are not implemented
 - Codex availability depends on the installed runtime, network, account entitlement, and current usage limits
@@ -110,4 +110,4 @@ VOID Mind is an early standalone foundation, not the completed future platform.
 
 ### Connection update
 
-Continue with ChatGPT uses direct official Sign in with ChatGPT plan usage; this path does not require a separate Codex installation. Intelligence also offers an optional OpenAI API key. Both use the native system credential store and separate model catalogs. Fresh consent, direct inference, incremental streaming, Stop, contextual continuation and restart recovery were observed natively. Real API-key inference, refresh/revocation and the remaining release gates are open. See [Connections](docs/CONNECTIONS.md) and the [completion audit](docs/COMPLETION_AUDIT.md).
+Continue with ChatGPT uses direct official Sign in with ChatGPT plan usage; this path does not require a separate Codex installation. Intelligence also offers an optional OpenAI API key. Both use the native system credential store and separate model catalogs. Fresh consent, direct inference, incremental streaming, Stop, contextual continuation and restart recovery were observed natively. Remaining manual validation is tracked in [issues #1–#5](https://github.com/SCamposs/void-mind/issues), including local/API-key inference, the final installed UI, real credential renewal/revocation and platform compatibility. These are not claimed as passed. See [Connections](docs/CONNECTIONS.md), the [alpha.1 handoff](docs/ALPHA_1_REPORT.md) and the [completion audit](docs/COMPLETION_AUDIT.md).
