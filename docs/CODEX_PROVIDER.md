@@ -11,6 +11,8 @@ VOID Mind retains the official Codex app-server for legacy conversation bindings
 
 Malformed lines, timeouts, exits, and unsupported server requests become bounded errors. Tokens, authorization URLs, raw protocol payloads, prompts, and assistant content are not logged.
 
+Version probes have a two-second deadline and monitor a 4 KiB output threshold. Output is captured in an OS-cleaned anonymous temporary file, avoiding a blocked output pipe or detached reader thread. Excess output, launch/I/O failure, nonzero exit, invalid UTF-8 and invalid version labels return `Unknown`; deadline/output failures terminate and reap the owned probe child. Windows MXC candidate selection shares a two-second probe budget and deduplicates canonical executable paths. These bounds apply to version probing, not all possible OS filesystem/process-creation delays or arbitrary descendant processes. Permission profiles are unchanged.
+
 ## Account
 
 `account/read`, browser login, device-code login, login cancellation, and logout are forwarded to app-server. The runtime owns credentials. VOID Mind holds only transient account presentation state and never persists a token.

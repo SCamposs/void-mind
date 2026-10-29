@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     env, fs,
-    io::{BufRead, BufReader, Write},
+    io::{BufRead, BufReader, Read, Seek, Write},
     path::{Path, PathBuf},
     process::{Child, ChildStdin, ChildStdout, Command, Stdio},
     sync::{
@@ -12,7 +12,7 @@ use std::{
         Arc, Mutex,
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_opener::OpenerExt;
@@ -23,6 +23,8 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
+const VERSION_PROBE_TIMEOUT: Duration = Duration::from_secs(2);
+const VERSION_OUTPUT_LIMIT: u64 = 4096;
 const GENERAL_INSTRUCTIONS: &str = "You are the intelligence provider inside VOID Mind, a general-purpose workspace for natural conversation, reasoning, writing, explanation, brainstorming, study, and everyday assistance. Respond as a calm general-purpose assistant. Do not use shell commands, edit files, inspect repositories, invoke tools, or request project access. Answer directly in natural language.";
 
 type PendingResponse = Result<Value, String>;
@@ -767,16 +769,23 @@ fn locate_codex() -> Option<PathBuf> {
             }
         }
     }
+    let mut seen = HashSet::new();
     let candidates: Vec<PathBuf> = candidates
         .into_iter()
         .filter_map(|path| resolve_codex_candidate(&path))
+        .filter(|path| seen.insert(path.clone()))
         .collect();
     #[cfg(windows)]
-    if let Some(path) = candidates
-        .iter()
-        .find(|path| supports_mxc_version(&codex_version(path)))
     {
-        return Some(path.clone());
+        let deadline = Instant::now() + VERSION_PROBE_TIMEOUT;
+        for path in &candidates {
+            let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+                break;
+            };
+            if supports_mxc_version(&codex_version_with_timeout(path, remaining)) {
+                return Some(path.clone());
+            }
+        }
     }
     candidates.into_iter().next()
 }
@@ -793,17 +802,101 @@ fn supports_mxc_version(version: &str) -> bool {
 }
 
 fn codex_version(path: &Path) -> String {
+    codex_version_with_timeout(path, VERSION_PROBE_TIMEOUT)
+}
+
+fn codex_version_with_timeout(path: &Path, timeout: Duration) -> String {
     let mut command = Command::new(path);
-    command.arg("--version").stdin(Stdio::null());
+    command.arg("--version");
+    capture_version_output(command, timeout)
+        .ok()
+        .and_then(parse_codex_version)
+        .unwrap_or_else(|| "Unknown".into())
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum VersionProbeError {
+    Io,
+    Timeout,
+    OutputLimit,
+    NonzeroExit,
+}
+
+fn stop_version_probe(child: &mut Child) {
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
+fn capture_version_output(
+    mut command: Command,
+    timeout: Duration,
+) -> Result<Vec<u8>, VersionProbeError> {
+    if timeout.is_zero() {
+        return Err(VersionProbeError::Timeout);
+    }
+    // Anonymous output avoids pipe backpressure/reader threads. The OS removes
+    // the file after its last handle closes, including error/timeout paths.
+    let mut output = tempfile::tempfile().map_err(|_| VersionProbeError::Io)?;
+    command
+        .stdin(Stdio::null())
+        .stdout(output.try_clone().map_err(|_| VersionProbeError::Io)?)
+        .stderr(Stdio::null());
     #[cfg(windows)]
     command.creation_flags(CREATE_NO_WINDOW);
-    command
-        .output()
-        .ok()
-        .and_then(|output| String::from_utf8(output.stdout).ok())
-        .map(|value| value.trim().trim_start_matches("codex-cli ").to_string())
-        .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| "Unknown".into())
+    let deadline = Instant::now() + timeout;
+    let mut child = command.spawn().map_err(|_| VersionProbeError::Io)?;
+    loop {
+        if Instant::now() >= deadline {
+            stop_version_probe(&mut child);
+            return Err(VersionProbeError::Timeout);
+        }
+        match output.metadata() {
+            Ok(metadata) if metadata.len() <= VERSION_OUTPUT_LIMIT => {}
+            Ok(_) => {
+                stop_version_probe(&mut child);
+                return Err(VersionProbeError::OutputLimit);
+            }
+            Err(_) => {
+                stop_version_probe(&mut child);
+                return Err(VersionProbeError::Io);
+            }
+        }
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                if !status.success() {
+                    return Err(VersionProbeError::NonzeroExit);
+                }
+                output.rewind().map_err(|_| VersionProbeError::Io)?;
+                let mut bytes = Vec::new();
+                output
+                    .take(VERSION_OUTPUT_LIMIT + 1)
+                    .read_to_end(&mut bytes)
+                    .map_err(|_| VersionProbeError::Io)?;
+                return if bytes.len() as u64 > VERSION_OUTPUT_LIMIT {
+                    Err(VersionProbeError::OutputLimit)
+                } else {
+                    Ok(bytes)
+                };
+            }
+            Ok(None) => {}
+            Err(_) => {
+                stop_version_probe(&mut child);
+                return Err(VersionProbeError::Io);
+            }
+        }
+        let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+            stop_version_probe(&mut child);
+            return Err(VersionProbeError::Timeout);
+        };
+        thread::sleep(remaining.min(Duration::from_millis(10)));
+    }
+}
+
+fn parse_codex_version(bytes: Vec<u8>) -> Option<String> {
+    let value = String::from_utf8(bytes).ok()?;
+    let value = value.trim().trim_start_matches("codex-cli ");
+    (!value.is_empty() && value.len() <= 128 && !value.chars().any(char::is_control))
+        .then(|| value.to_string())
 }
 
 fn required_string(value: &Value, key: &str) -> Result<String, String> {
@@ -1210,6 +1303,24 @@ mod tests {
         assert_eq!(std::env::var("VOID_MIND_STDIO_FIXTURE").as_deref(), Ok("1"));
         println!(); // Separate libtest's status prefix from protocol output.
         io::stdout().flush().unwrap();
+        if let Ok(mode) = std::env::var("VOID_MIND_VERSION_FIXTURE") {
+            match mode.as_str() {
+                "version" => {
+                    println!("codex-cli 0.165.0");
+                    std::process::exit(0);
+                }
+                "hang" => {
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                    std::process::exit(0);
+                }
+                "large" => {
+                    let _ = io::stdout().write_all(&vec![b'x'; 16_384]);
+                    std::process::exit(0);
+                }
+                "fail" => std::process::exit(7),
+                _ => panic!("Unsupported version fixture"),
+            }
+        }
         for line in io::stdin().lock().lines() {
             let request: serde_json::Value = serde_json::from_str(&line.unwrap()).unwrap();
             match request["method"].as_str().unwrap() {
@@ -1229,6 +1340,106 @@ mod tests {
     struct TestRuntime {
         client: std::sync::Arc<super::CodexClient>,
         reader: Option<std::thread::JoinHandle<()>>,
+    }
+
+    fn version_fixture(mode: &str) -> std::process::Command {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "codex::tests::stdio_process_fixture",
+                "--ignored",
+                "--nocapture",
+            ])
+            .env("VOID_MIND_STDIO_FIXTURE", "1")
+            .env("VOID_MIND_VERSION_FIXTURE", mode);
+        command
+    }
+
+    #[test]
+    fn version_probe_collects_success_and_rejects_nonzero_exit() {
+        let output = super::capture_version_output(
+            version_fixture("version"),
+            std::time::Duration::from_secs(5),
+        )
+        .unwrap();
+        assert!(String::from_utf8(output)
+            .unwrap()
+            .contains("codex-cli 0.165.0"));
+        assert_eq!(
+            super::capture_version_output(
+                version_fixture("fail"),
+                std::time::Duration::from_secs(5)
+            ),
+            Err(super::VersionProbeError::NonzeroExit)
+        );
+    }
+
+    #[test]
+    fn version_probe_times_out_an_actual_hanging_child() {
+        let started = std::time::Instant::now();
+        assert_eq!(
+            super::capture_version_output(
+                version_fixture("hang"),
+                std::time::Duration::from_millis(200)
+            ),
+            Err(super::VersionProbeError::Timeout)
+        );
+        assert!(started.elapsed() < std::time::Duration::from_secs(5));
+    }
+
+    #[test]
+    fn version_probe_rejects_excessive_output_and_spawn_failure() {
+        assert_eq!(
+            super::capture_version_output(
+                version_fixture("large"),
+                std::time::Duration::from_secs(5)
+            ),
+            Err(super::VersionProbeError::OutputLimit)
+        );
+        let missing =
+            std::env::temp_dir().join(format!("void-mind-missing-{}", uuid::Uuid::new_v4()));
+        assert_eq!(
+            super::capture_version_output(
+                std::process::Command::new(&missing),
+                std::time::Duration::ZERO
+            ),
+            Err(super::VersionProbeError::Timeout)
+        );
+        assert_eq!(
+            super::capture_version_output(
+                std::process::Command::new(missing),
+                std::time::Duration::from_secs(1)
+            ),
+            Err(super::VersionProbeError::Io)
+        );
+    }
+
+    #[test]
+    fn version_labels_reject_empty_invalid_multiline_and_oversized_values() {
+        assert_eq!(
+            super::parse_codex_version(b"codex-cli 0.165.0-alpha.1.2\n".to_vec()),
+            Some("0.165.0-alpha.1.2".into())
+        );
+        for bytes in [
+            vec![],
+            vec![255],
+            b"version\nextra".to_vec(),
+            vec![b'x'; 129],
+        ] {
+            assert!(super::parse_codex_version(bytes).is_none());
+        }
+    }
+
+    #[test]
+    #[ignore = "explicit host check; requires an installed official Codex runtime"]
+    fn installed_runtime_version_probe() {
+        let executable = super::locate_codex().expect("No installed Codex runtime found");
+        let version = super::codex_version(&executable);
+        assert_ne!(version, "Unknown", "Installed runtime version probe failed");
+        #[cfg(windows)]
+        assert!(super::supports_mxc_version(&version));
+        println!("Installed Codex version confirmed: {version}");
     }
 
     impl TestRuntime {
