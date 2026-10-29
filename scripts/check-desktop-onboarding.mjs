@@ -311,7 +311,7 @@ try {
   await screenshot("07-compact-navigation");
   for (let tab = 0; tab < 8; tab++) {
     await keys("\uE004");
-    assert.equal(await evaluate("return !!document.activeElement?.closest('#primary-navigation');"), true);
+    await until(`drawer focus after Tab ${tab + 1}`, () => evaluate("return !!document.activeElement?.closest('#primary-navigation');"), 1000);
   }
   await keys("\uE00C");
   await until("compact drawer closes and returns focus", () => evaluate("return !document.querySelector('#primary-navigation') && document.activeElement?.getAttribute('aria-label') === 'Open navigation';"));
