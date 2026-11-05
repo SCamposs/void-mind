@@ -215,3 +215,27 @@ test("publisher preserves existing assets and proposes only a reviewed feed chan
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+
+test("a stale feed PR cannot roll back a newer main feed", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "feed-merge-"));
+  const git = (...args) => L.run("git", ["-C", dir, ...args]);
+  try {
+    git("init", "--initial-branch=main"); git("config", "user.name", "Fixture");
+    git("config", "user.email", "fixture@users.noreply.github.com");
+    fs.mkdirSync(path.join(dir, "updater"));
+    const file = path.join(dir, "updater/latest.json");
+    fs.writeFileSync(file, JSON.stringify({ version: "1.2.0", platforms: {} }));
+    git("add", "."); git("commit", "-m", "newer release already merged");
+    git("update-ref", "refs/remotes/origin/main", git("rev-parse", "HEAD"));
+    fs.writeFileSync(file, JSON.stringify({ version: "1.1.0", platforms: {} }));
+    assert.throws(() => G.checkFeedAgainstMain(dir), /rollback/);
+    fs.writeFileSync(file, JSON.stringify({ version: "1.2.0", platforms: { changed: true } }));
+    assert.throws(() => G.checkFeedAgainstMain(dir), /replacement/);
+    fs.writeFileSync(file, JSON.stringify({ version: "1.3.0", platforms: {} }));
+    assert.equal(G.checkFeedAgainstMain(dir), true);
+  } finally {
+    assert.ok(path.resolve(dir).startsWith(path.resolve(os.tmpdir()) + path.sep));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

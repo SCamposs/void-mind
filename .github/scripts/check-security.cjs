@@ -67,12 +67,19 @@ function checkWorkflow(name, source) {
   } else assert.equal(signingReferences, 0);
   return true;
 }
+function checkFeedAgainstMain(root) {
+  const L = require("./release-lib.cjs");
+  const baseline = JSON.parse(L.run("git", ["show", "origin/main:updater/latest.json"], { cwd: root }));
+  const candidate = JSON.parse(fs.readFileSync(path.join(root, "updater/latest.json"), "utf8"));
+  return L.assertFeedAdvance(baseline, candidate);
+}
 function checkRepository(root = process.cwd()) {
   const directory = path.join(root, ".github/workflows");
   for (const name of fs.readdirSync(directory).filter(n => /\.ya?ml$/.test(n))) checkWorkflow(name, fs.readFileSync(path.join(directory, name), "utf8"));
   const cfg = JSON.parse(fs.readFileSync(path.join(root, require("./release-lib.cjs").policy.desktop, "src-tauri/tauri.conf.json"), "utf8"));
   assert.equal(cfg.bundle.createUpdaterArtifacts, true, "Keep normal release signature enforcement");
   assert.equal(cfg.plugins.updater.pubkey, require("./release-lib.cjs").policy.pubkey);
+  if (process.env.GITHUB_EVENT_NAME === "pull_request") checkFeedAgainstMain(root);
 }
 if (require.main === module) { checkRepository(); console.log("Workflow signing boundary and updater identity checks passed."); }
-module.exports = { parse, checkWorkflow, checkRepository };
+module.exports = { parse, checkWorkflow, checkRepository, checkFeedAgainstMain };
