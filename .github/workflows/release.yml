@@ -1,227 +1,216 @@
 name: Desktop release
-
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing version tag to package (for example v0.2.0-alpha.0)"
+        description: Existing annotated version tag on main
         required: true
         type: string
-
+      verify_only:
+        description: Build, sign and verify without publishing or changing the feed
+        type: boolean
+        default: true
 permissions:
-  contents: write
-
+  contents: read
 concurrency:
-  group: release-${{ github.ref_name || inputs.tag }}
+  group: desktop-release
   cancel-in-progress: false
-
 jobs:
-  windows:
-    name: Validate and package Windows
-    runs-on: windows-latest
-    env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-
-    steps:
-      - name: Check out release tag
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ env.RELEASE_TAG }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Set up stable Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust build
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: apps/desktop/src-tauri
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate application
-        run: |
-          npm run lint
-          npm run typecheck
-          npm run test
-          npm run build
-
-      - name: Validate native application
-        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
-
-      - name: Build NSIS installer
-        working-directory: apps/desktop
-        run: npm run tauri -- build --bundles nsis
-
-      - name: Prepare release assets
-        shell: pwsh
-        run: |
-          $source = Get-ChildItem -Path "apps/desktop/src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe" -File |
-            Sort-Object LastWriteTime -Descending |
-            Select-Object -First 1
-          if (-not $source) {
-            throw "Tauri did not produce an NSIS setup executable."
-          }
-
-          New-Item -ItemType Directory -Path "release-assets" -Force | Out-Null
-          $installer = Join-Path "release-assets" "VOID-Mind-Windows-x64-setup.exe"
-          Copy-Item -LiteralPath $source.FullName -Destination $installer
-          Copy-Item -LiteralPath "$($source.FullName).sig" -Destination "$installer.sig"
-          $hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  VOID-Mind-Windows-x64-setup.exe" |
-            Set-Content -LiteralPath "$installer.sha256" -Encoding ascii
-
-      - name: Preserve workflow artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: VOID-Mind-Windows-x64
-          path: release-assets/*
-          if-no-files-found: error
-
-  linux:
-    name: Validate and package Linux
+  prepare:
     runs-on: ubuntu-22.04
-    env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-
+    timeout-minutes: 10
+    outputs:
+      source_sha: ${{ steps.metadata.outputs.source_sha }}
+      tag: ${{ steps.metadata.outputs.tag }}
     steps:
-      - name: Check out release tag
-        uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ env.RELEASE_TAG }}
-
-      - name: Install Linux system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes \
-            libayatana-appindicator3-dev \
-            libdbus-1-dev \
-            librsvg2-dev \
-            libwebkit2gtk-4.1-dev \
-            patchelf
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+          ref: ${{ github.workflow_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+      - run: npm ci --prefix .github/signing --ignore-scripts --no-audit --no-fund
+      - name: Validate trusted tag and preserve updater identity
+        id: metadata
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: node .github/scripts/release.cjs prepare "$RELEASE_TAG"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: release-metadata
+          path: metadata/release-metadata.json
+          retention-days: 7
+          if-no-files-found: error
+  windows:
+    name: Validate and package Windows without credentials
+    needs: prepare
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
-
-      - name: Set up stable Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust build
-        uses: swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable action
+      - uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: apps/desktop/src-tauri
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate application
+      - name: Install and validate
+        working-directory: .
         run: |
+          npm ci
           npm run lint
           npm run typecheck
-          npm run test
+          npm test
           npm run build
-
-      - name: Validate native application
-        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
-
-      - name: Build Linux packages
+      - run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+      - name: Build unsigned NSIS
         working-directory: apps/desktop
-        run: npm run tauri -- build --bundles deb,appimage
-
-      - name: Prepare release assets
-        run: |
-          deb_source="$(find apps/desktop/src-tauri/target/release/bundle/deb -maxdepth 1 -type f -name '*.deb' -print -quit)"
-          appimage_source="$(find apps/desktop/src-tauri/target/release/bundle/appimage -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
-
-          test -n "$deb_source"
-          test -n "$appimage_source"
-
-          mkdir -p release-assets
-          cp "$deb_source" release-assets/VOID-Mind-Linux-x64.deb
-          cp "$appimage_source" release-assets/VOID-Mind-Linux-x64.AppImage
-          cp "$appimage_source.sig" release-assets/VOID-Mind-Linux-x64.AppImage.sig
-          chmod +x release-assets/VOID-Mind-Linux-x64.AppImage
-          cd release-assets
-          sha256sum VOID-Mind-Linux-x64.deb > VOID-Mind-Linux-x64.deb.sha256
-          sha256sum VOID-Mind-Linux-x64.AppImage > VOID-Mind-Linux-x64.AppImage.sha256
-          cd ../apps/desktop
-          npm run tauri -- signer sign --password= ../../release-assets/VOID-Mind-Linux-x64.deb
-
-      - name: Preserve workflow artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: VOID-Mind-Linux-x64
-          path: release-assets/*
-          if-no-files-found: error
-
-  release:
-    name: Publish GitHub Release
-    needs: [windows, linux]
-    runs-on: ubuntu-latest
-    env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-
-    steps:
-      - name: Check out release scripts and notes
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ env.RELEASE_TAG }}
-          path: source
-
-      - name: Download packaged applications
-        uses: actions/download-artifact@v8
-        with:
-          pattern: VOID-Mind-*
-          path: release-assets
-          merge-multiple: true
-
-      - name: Create signed updater manifest
+        run: npm run tauri -- build --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":false}}'
+      - name: Prepare unsigned Windows artifact
         shell: pwsh
         run: |
-          $nativeVersion = (Get-Content -Raw source/apps/desktop/src-tauri/tauri.conf.json | ConvertFrom-Json).version
-          ./source/.github/scripts/create-updater-manifest.ps1 -Tag $env:RELEASE_TAG -Version $nativeVersion -Repository "${{ github.repository }}" -AssetDirectory release-assets
-
-      - name: Create GitHub Release and upload assets
-        uses: softprops/action-gh-release@v2
+          $files = @(Get-ChildItem apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe -File)
+          if ($files.Count -ne 1) { throw "Expected exactly one installer" }
+          New-Item -ItemType Directory -Path unsigned -Force | Out-Null
+          Copy-Item -LiteralPath $files[0].FullName -Destination unsigned/VOID-Mind-Windows-x64-setup.exe
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: VOID Mind ${{ env.RELEASE_TAG }}
-          body_path: source/docs/releases/${{ env.RELEASE_TAG }}.md
-          fail_on_unmatched_files: true
-          prerelease: ${{ contains(env.RELEASE_TAG, 'alpha') || contains(env.RELEASE_TAG, 'beta') || contains(env.RELEASE_TAG, 'rc') }}
-          files: release-assets/*
-
-      - name: Check out updater feed
-        uses: actions/checkout@v7
+          name: unsigned-windows
+          path: unsigned/*
+          retention-days: 7
+          if-no-files-found: error
+  linux:
+    name: Validate and package Linux without credentials
+    needs: prepare
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: main
-          path: updater-feed
-
-      - name: Publish updater feed
-        shell: bash
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          persist-credentials: false
+      - name: Install platform dependencies
+        run: sudo apt-get update && sudo apt-get install --yes libayatana-appindicator3-dev libdbus-1-dev librsvg2-dev libwebkit2gtk-4.1-dev patchelf
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable action
+      - uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - name: Install and validate
+        working-directory: .
         run: |
-          mkdir -p updater-feed/updater
-          cp release-assets/latest.json updater-feed/updater/latest.json
-          cd updater-feed
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add updater/latest.json
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "chore(release): update updater feed to $RELEASE_TAG"
-          git push origin HEAD:main
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm test
+          npm run build
+      - run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+      - name: Build unsigned Linux packages
+        working-directory: apps/desktop
+        run: npm run tauri -- build --bundles deb,appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
+      - name: Prepare unsigned Linux artifacts
+        run: |
+          mkdir unsigned
+          shopt -s nullglob
+          debs=(apps/desktop/src-tauri/target/release/bundle/deb/*.deb)
+          images=(apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage)
+          test "${#debs[@]}" -eq 1
+          test "${#images[@]}" -eq 1
+          cp "${debs[0]}" unsigned/VOID-Mind-Linux-x64.deb
+          cp "${images[0]}" unsigned/VOID-Mind-Linux-x64.AppImage
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: unsigned-linux
+          path: unsigned/*
+          retention-days: 7
+          if-no-files-found: error
+  sign:
+    name: Sign and verify on a fresh runner
+    needs: [prepare, windows, linux]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    environment: release-signing
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts
+            .github/signing
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+      - name: Install independently locked signing tool without lifecycle scripts or cache
+        run: npm ci --prefix .github/signing --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: release-metadata
+          path: metadata
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: unsigned-windows
+          path: unsigned
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: unsigned-linux
+          path: unsigned
+      - name: Sign fixed package names and verify against the unchanged public key
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: node .github/scripts/release.cjs sign metadata/release-metadata.json unsigned signed
+      - name: Verify without signing credentials
+        run: node .github/scripts/release.cjs verify metadata/release-metadata.json signed
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: signed-release
+          path: signed/*
+          retention-days: 7
+          if-no-files-found: error
+  publish:
+    name: Publish verified assets and propose the feed update
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.verify_only }}
+    needs: [prepare, sign]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts
+            .github/signing
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+      - run: npm ci --prefix .github/signing --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: release-metadata
+          path: metadata
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: signed-release
+          path: signed
+      - name: Publish without the signing key; main changes require review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/publish-release.cjs metadata/release-metadata.json signed
