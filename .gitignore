@@ -29,3 +29,25 @@ apps/desktop/src-tauri/target/
 *.pth
 *.ckpt
 *.onnx
+
+# Environment files and private signing/credential material
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+!**/.env.template
+*.key
+*.key.*
+!*.key.pub
+*.p12
+*.pfx
+*.keystore
+*.jks
+*.pem
+*.p8
+**/credentials.json
+**/client_secret*.json
+**/.aws/credentials
+.github/signing/node_modules/

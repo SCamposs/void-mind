@@ -1,0 +1,8 @@
+{
+  "repository": "SCamposs/void-mind",
+  "name": "VOID Mind",
+  "prefix": "VOID-Mind",
+  "desktop": "apps/desktop",
+  "versionKind": "numeric-alpha",
+  "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMxNEZDQTJDOTE1NDI0NTEKUldSUkpGU1JMTXBQd1RzdVFhNDA2Wmh0aCtURFluU0hYZld1aHV1cnZtbUFLejJQVWJYU0JNSmIK"
+}
